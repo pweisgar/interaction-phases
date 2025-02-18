@@ -74,7 +74,7 @@ const Survey = () => {
               <RadioGroupItem 
                 value={answer} 
                 id={answer} 
-                className="bg-black border-black checked:bg-black checked:border-black"
+                className="border-black bg-white checked:bg-black checked:border-black"
               />
               <Label htmlFor={answer} className="flex-grow cursor-pointer">{answer}</Label>
             </div>
