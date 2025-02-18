@@ -53,7 +53,7 @@ const Survey = () => {
     survey.setSubmitTime(Date.now());
     setTimeout(() => {
       navigate("/results");
-    }, 150);
+    }, 500);
   };
 
   return (
