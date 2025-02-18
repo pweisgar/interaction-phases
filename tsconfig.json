@@ -9,11 +9,20 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+
+    /* TypeScript & JSX Config */
+    "jsx": "react-jsx",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+
+    /* Type Checking */
     "noImplicitAny": false,
     "noUnusedParameters": false,
-    "skipLibCheck": true,
-    "allowJs": true,
     "noUnusedLocals": false,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+
+    /* JavaScript & Performance */
+    "allowJs": true,
+    "skipLibCheck": true
   }
 }
