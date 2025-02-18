@@ -11,7 +11,6 @@ const Landing = () => {
       <div className="max-w-2xl w-full space-y-8 text-center">
         <Button 
           className="inline-flex items-center justify-center px-8 py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 animate-slide-up bg-primary hover:bg-primary-hover text-white"
-          style={{ animationDelay: "0.3s" }}
           onClick={() => navigate('/survey')}
         >
           Start Survey
