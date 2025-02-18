@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSurvey } from "@/contexts/SurveyContext";
+import { useNavigate } from 'react-router-dom';
+import { useSurvey } from '@/contexts/SurveyContext';
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -14,40 +14,29 @@ const ANSWERS = [
   "Very Unhappy"
 ];
 
-// Declare trackMouseMovement in a higher scope.
-let trackMouseMovement: (e: MouseEvent) => void;
-
 const Survey = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Define the event listener function
-  trackMouseMovement = (e: MouseEvent) => {
-    const phase =
-      survey.firstInteractionTime === null
-        ? "pre"
-        : survey.lastInteractionTime === null
-        ? "during"
-        : "post";
-
-    survey.addMousePosition({
-      x: e.clientX,
-      y: e.clientY,
-      timestamp: Date.now(),
-      phase,
-    });
-  };
-
   useEffect(() => {
-    // Initialize times and start tracking
     survey.resetSurvey();
     survey.setStartTime(Date.now());
 
-    window.addEventListener("mousemove", trackMouseMovement);
+    const trackMouseMovement = (e: MouseEvent) => {
+      const phase = survey.firstInteractionTime === null ? 'pre' : 
+        (survey.lastInteractionTime === null ? 'during' : 'post');
+      
+      survey.addMousePosition({
+        x: e.clientX,
+        y: e.clientY,
+        timestamp: Date.now(),
+        phase,
+      });
+    };
 
-    // Cleanup on unmount
-    return () => window.removeEventListener("mousemove", trackMouseMovement);
+    window.addEventListener('mousemove', trackMouseMovement);
+    return () => window.removeEventListener('mousemove', trackMouseMovement);
   }, []);
 
   const handleAnswerSelect = (value: string) => {
@@ -62,14 +51,9 @@ const Survey = () => {
   const handleSubmit = () => {
     setIsSubmitting(true);
     survey.setSubmitTime(Date.now());
-
-    // Stop tracking mouse movements right now
-    window.removeEventListener("mousemove", trackMouseMovement);
-
-    // Navigate after a short delay
     setTimeout(() => {
       navigate("/results");
-    }, 500);
+    }, 50);
   };
 
   return (
@@ -88,9 +72,9 @@ const Survey = () => {
         >
           {ANSWERS.map((answer) => (
             <div key={answer} className="flex items-center space-x-3">
-              <RadioGroupItem
-                value={answer}
-                id={answer}
+              <RadioGroupItem 
+                value={answer} 
+                id={answer} 
                 className="
                   appearance-none w-5 h-5 border-2 border-black rounded-full bg-white 
                   checked:bg-black checked:border-black 
@@ -98,9 +82,7 @@ const Survey = () => {
                   before:hidden after:hidden
                 "
               />
-              <Label htmlFor={answer} className="flex-grow cursor-pointer">
-                {answer}
-              </Label>
+              <Label htmlFor={answer} className="flex-grow cursor-pointer">{answer}</Label>
             </div>
           ))}
         </RadioGroup>
