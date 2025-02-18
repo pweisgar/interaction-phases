@@ -77,7 +77,8 @@ const Survey = () => {
                 className="
                   appearance-none w-5 h-5 border-2 border-black rounded-full bg-white 
                   checked:bg-black checked:border-black 
-                  focus:outline-none focus:ring-0 focus:ring-offset-0
+                  focus:outline-none focus:ring-0 focus:ring-offset-0 
+                  before:hidden after:hidden
                 "
               />
               <Label htmlFor={answer} className="flex-grow cursor-pointer">{answer}</Label>
