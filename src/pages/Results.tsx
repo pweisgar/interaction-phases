@@ -58,7 +58,7 @@ const Results = () => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // New color scheme using grays
+    // New color scheme
     const colors = {
       pre: '#222222',    // Dark Gray
       during: '#007BFF', // Blue
