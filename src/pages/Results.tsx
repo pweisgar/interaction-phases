@@ -58,11 +58,11 @@ const Results = () => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // New color scheme using blue tones
+    // New color scheme using grays
     const colors = {
-      pre: '#0EA5E9',    // Ocean Blue
-      during: '#33C3F0', // Sky Blue
-      post: '#1EAEDB',   // Bright Blue
+      pre: '#222222',    // Dark Gray
+      during: '#888888', // Medium Gray
+      post: '#AAADB0',   // Light Gray
     };
 
     let lastPos = positions[0];
@@ -147,7 +147,7 @@ const Results = () => {
       <div className="relative min-h-screen flex flex-col items-center justify-center p-8 animate-fade-in">
         <div className="max-w-2xl w-full space-y-8">
           <div className="space-y-4">
-            <div className="inline-block bg-[#0EA5E9]/10 text-[#0EA5E9] px-3 py-1 rounded-full text-sm font-medium">
+            <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
               Question 1 of 1
             </div>
             <h2 className="text-3xl font-bold text-gray-900">
@@ -166,7 +166,7 @@ const Results = () => {
               <div
                 key={answer}
                 className={`flex items-center space-x-3 rounded-lg border p-4 ${
-                  survey.selectedAnswer === answer ? 'bg-[#0EA5E9]/10 border-[#0EA5E9]' : ''
+                  survey.selectedAnswer === answer ? 'bg-gray-100 border-gray-400' : ''
                 }`}
               >
                 <RadioGroupItem value={answer} id={answer} disabled />
@@ -174,6 +174,13 @@ const Results = () => {
               </div>
             ))}
           </RadioGroup>
+
+          <Button
+            className="w-full py-6 text-lg font-medium transition-all duration-200 transform bg-gray-900 hover:bg-gray-800 text-white disabled:opacity-50"
+            disabled={true}
+          >
+            Submit Survey
+          </Button>
         </div>
       </div>
 
@@ -183,12 +190,12 @@ const Results = () => {
       }`}>
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <div className="inline-block bg-[#0EA5E9]/10 text-[#0EA5E9] px-3 py-1 rounded-full text-sm font-medium">
+            <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
               Results
             </div>
             <button
               onClick={() => setShowAnalysis(!showAnalysis)}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
             >
               {showAnalysis ? '→' : '←'}
             </button>
@@ -197,11 +204,20 @@ const Results = () => {
           <div className="space-y-4">
             {metrics && Object.entries(metrics).map(([phase, data]) => (
               <div key={phase} className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-900 capitalize mb-1">
-                  {phase} Interaction
-                </h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ 
+                      backgroundColor: phase === 'pre' ? '#222222' : 
+                                     phase === 'during' ? '#888888' : '#AAADB0' 
+                    }} 
+                  />
+                  <h3 className="text-sm font-medium text-gray-900 capitalize">
+                    {phase} Interaction
+                  </h3>
+                </div>
                 <div className="flex justify-between items-baseline">
-                  <p className="text-2xl font-bold text-[#0EA5E9]">
+                  <p className="text-2xl font-bold text-gray-700">
                     {data.percentage}%
                   </p>
                   <p className="text-sm text-gray-600">
@@ -212,7 +228,7 @@ const Results = () => {
             ))}
 
             <Button
-              className="w-full py-4 text-base font-medium bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white"
+              className="w-full py-4 text-base font-medium bg-gray-900 hover:bg-gray-800 text-white"
               onClick={() => {
                 setCurrentFrame(0);
                 setIsAnimating(true);
@@ -232,6 +248,16 @@ const Results = () => {
           </div>
         </div>
       </div>
+
+      {/* Toggle Analysis Button (visible when panel is hidden) */}
+      {!showAnalysis && (
+        <button
+          onClick={() => setShowAnalysis(true)}
+          className="fixed top-4 right-4 bg-white p-2 rounded-lg shadow-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+        >
+          ←
+        </button>
+      )}
     </div>
   );
 };
