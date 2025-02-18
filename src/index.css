@@ -112,4 +112,9 @@ input[type="radio"]::before {
   box-shadow: none !important;
 }
 
+/* Hide the default Radix UI Indicator (blue dot) */
+[data-state="checked"] svg {
+  display: none !important;
+}
+
 
