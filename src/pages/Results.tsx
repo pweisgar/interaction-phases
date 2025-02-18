@@ -52,15 +52,15 @@ const Results = () => {
     return {
       pre: {
         time: preInteractionTime,
-        percentage: ((preInteractionTime / totalTime) * 100).toFixed(1),
+        percentage: ((preInteractionTime / totalTime) * 100).toFixed(0),
       },
       during: {
         time: duringInteractionTime,
-        percentage: ((duringInteractionTime / totalTime) * 100).toFixed(1),
+        percentage: ((duringInteractionTime / totalTime) * 100).toFixed(0),
       },
       post: {
         time: postInteractionTime,
-        percentage: ((postInteractionTime / totalTime) * 100).toFixed(1),
+        percentage: ((postInteractionTime / totalTime) * 100).toFixed(0),
       },
     };
   };
@@ -272,6 +272,7 @@ const Results = () => {
               ))}
 
             <Button
+              variant="outline"
               className="w-full py-4 text-base font-medium"
               onClick={() => {
                 setCurrentFrame(0);
@@ -291,7 +292,7 @@ const Results = () => {
               className="w-full py-4 text-base font-medium"
               onClick={() => navigate("/")} 
             >
-              New Survey
+              New Single Question Survey
             </Button>
           </div>
         </div>
