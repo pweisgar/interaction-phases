@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useSurvey } from '@/contexts/SurveyContext';
 import { Button } from "@/components/ui/button";
