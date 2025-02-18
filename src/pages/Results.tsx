@@ -292,7 +292,7 @@ const Results = () => {
               className="w-full py-4 text-base font-medium"
               onClick={() => navigate("/")} 
             >
-              New Single Question Survey
+              Restart Single Question Survey
             </Button>
           </div>
         </div>
