@@ -69,7 +69,7 @@ const Survey = () => {
     // Navigate after a short delay
     setTimeout(() => {
       navigate("/results");
-    }, 500);
+    }, 50);
   };
 
   return (
