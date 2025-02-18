@@ -21,11 +21,11 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#84A98C",
-          hover: "#6B8E74",
+          DEFAULT: "#0EA5E9",
+          hover: "#0284C7",
         },
         secondary: "#F8F9FA",
-        accent: "#E28F83",
+        accent: "#33C3F0",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

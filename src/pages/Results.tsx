@@ -3,6 +3,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSurvey } from '@/contexts/SurveyContext';
 import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+const ANSWERS = [
+  "Very Happy",
+  "Somewhat Happy",
+  "Neutral",
+  "Somewhat Unhappy",
+  "Very Unhappy"
+];
 
 const Results = () => {
   const navigate = useNavigate();
@@ -10,6 +20,7 @@ const Results = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
+  const [showAnalysis, setShowAnalysis] = useState(true);
 
   const calculateMetrics = () => {
     if (!survey.startTime || !survey.firstInteractionTime || !survey.submitTime) return null;
@@ -47,24 +58,45 @@ const Results = () => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
+    // New color scheme using blue tones
     const colors = {
-      pre: '#84A98C',
-      during: '#E28F83',
-      post: '#6B8E74',
+      pre: '#0EA5E9',    // Ocean Blue
+      during: '#33C3F0', // Sky Blue
+      post: '#1EAEDB',   // Bright Blue
     };
 
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
     let lastPos = positions[0];
+    let lastTimestamp = lastPos.timestamp;
+    
     positions.slice(0, currentFrame).forEach((pos) => {
+      // Calculate time gap
+      const timeGap = pos.timestamp - lastTimestamp;
+      
+      // If there's a significant pause (>1000ms), draw a pulsing dot
+      if (timeGap > 1000) {
+        ctx.beginPath();
+        ctx.arc(lastPos.x, lastPos.y, 5, 0, 2 * Math.PI);
+        ctx.fillStyle = colors[pos.phase];
+        ctx.fill();
+        
+        // Draw time indicator
+        ctx.fillStyle = '#555555';
+        ctx.font = '12px Arial';
+        ctx.fillText(`${(timeGap / 1000).toFixed(1)}s`, lastPos.x + 10, lastPos.y);
+      }
+
+      // Draw movement line
       ctx.beginPath();
       ctx.moveTo(lastPos.x, lastPos.y);
       ctx.lineTo(pos.x, pos.y);
       ctx.strokeStyle = colors[pos.phase];
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.stroke();
+      
       lastPos = pos;
+      lastTimestamp = pos.timestamp;
     });
   };
 
@@ -97,63 +129,105 @@ const Results = () => {
       }, 10);
       drawMouseTrail();
       return () => clearTimeout(timer);
+    } else if (isAnimating && currentFrame >= survey.mousePositions.length) {
+      setIsAnimating(false);
     }
   }, [isAnimating, currentFrame]);
 
   const metrics = calculateMetrics();
 
   return (
-    <div className="min-h-screen relative bg-secondary animate-fade-in">
+    <div className="min-h-screen relative bg-secondary">
       <canvas
         ref={canvasRef}
         className="absolute inset-0 pointer-events-none"
       />
       
-      <div className="relative z-10 max-w-4xl mx-auto pt-16 px-4">
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <div className="space-y-2 mb-8">
-            <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-              Results
+      {/* Survey Page Replica */}
+      <div className="relative min-h-screen flex flex-col items-center justify-center p-8 animate-fade-in">
+        <div className="max-w-2xl w-full space-y-8">
+          <div className="space-y-4">
+            <div className="inline-block bg-[#0EA5E9]/10 text-[#0EA5E9] px-3 py-1 rounded-full text-sm font-medium">
+              Question 1 of 1
             </div>
             <h2 className="text-3xl font-bold text-gray-900">
-              Interaction Analysis
+              How are you feeling today?
             </h2>
+            <p className="text-gray-600">
+              Select the option that best describes your current mood.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {metrics && Object.entries(metrics).map(([phase, data]) => (
-              <div key={phase} className="bg-gray-50 rounded-lg p-6 text-center">
-                <h3 className="text-lg font-medium text-gray-900 capitalize mb-2">
-                  {phase} Interaction
-                </h3>
-                <p className="text-3xl font-bold text-primary mb-1">
-                  {data.percentage}%
-                </p>
-                <p className="text-sm text-gray-600">
-                  {(data.time / 1000).toFixed(2)}s
-                </p>
+          <RadioGroup
+            className="space-y-4"
+            value={survey.selectedAnswer || ""}
+          >
+            {ANSWERS.map((answer) => (
+              <div
+                key={answer}
+                className={`flex items-center space-x-3 rounded-lg border p-4 ${
+                  survey.selectedAnswer === answer ? 'bg-[#0EA5E9]/10 border-[#0EA5E9]' : ''
+                }`}
+              >
+                <RadioGroupItem value={answer} id={answer} disabled />
+                <Label htmlFor={answer} className="flex-grow">{answer}</Label>
               </div>
             ))}
+          </RadioGroup>
+        </div>
+      </div>
+
+      {/* Floating Analysis Panel */}
+      <div className={`fixed top-4 right-4 w-96 transition-transform duration-300 transform ${
+        showAnalysis ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex justify-between items-center mb-4">
+            <div className="inline-block bg-[#0EA5E9]/10 text-[#0EA5E9] px-3 py-1 rounded-full text-sm font-medium">
+              Results
+            </div>
+            <button
+              onClick={() => setShowAnalysis(!showAnalysis)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              {showAnalysis ? '→' : '←'}
+            </button>
           </div>
 
           <div className="space-y-4">
+            {metrics && Object.entries(metrics).map(([phase, data]) => (
+              <div key={phase} className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-gray-900 capitalize mb-1">
+                  {phase} Interaction
+                </h3>
+                <div className="flex justify-between items-baseline">
+                  <p className="text-2xl font-bold text-[#0EA5E9]">
+                    {data.percentage}%
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {(data.time / 1000).toFixed(2)}s
+                  </p>
+                </div>
+              </div>
+            ))}
+
             <Button
-              className="w-full py-6 text-lg font-medium transition-all duration-200 bg-primary hover:bg-primary-hover text-white"
+              className="w-full py-4 text-base font-medium bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white"
               onClick={() => {
                 setCurrentFrame(0);
                 setIsAnimating(true);
               }}
               disabled={isAnimating}
             >
-              {isAnimating ? "Replaying Movement..." : "Replay Mouse Movement"}
+              {isAnimating ? "Replaying..." : "Replay Movement"}
             </Button>
             
             <Button
               variant="outline"
-              className="w-full py-6 text-lg font-medium"
+              className="w-full py-4 text-base font-medium"
               onClick={() => navigate('/')}
             >
-              Start New Survey
+              New Survey
             </Button>
           </div>
         </div>
