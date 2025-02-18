@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSurvey } from '@/contexts/SurveyContext';
@@ -71,18 +70,19 @@ const Survey = () => {
           onValueChange={handleAnswerSelect}
         >
           {ANSWERS.map((answer) => (
-            <div
-              key={answer}
-              className="flex items-center space-x-3 rounded-lg border p-4 transition-colors hover:bg-gray-50"
-            >
-              <RadioGroupItem value={answer} id={answer} />
+            <div key={answer} className="flex items-center space-x-3">
+              <RadioGroupItem 
+                value={answer} 
+                id={answer} 
+                className="bg-black border-black checked:bg-black checked:border-black"
+              />
               <Label htmlFor={answer} className="flex-grow cursor-pointer">{answer}</Label>
             </div>
           ))}
         </RadioGroup>
 
         <Button
-          className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-primary hover:bg-primary-hover text-white disabled:opacity-50"
+          className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
           onClick={handleSubmit}
           disabled={!survey.selectedAnswer || isSubmitting}
         >
