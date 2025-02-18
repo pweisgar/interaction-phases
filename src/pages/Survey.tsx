@@ -60,15 +60,9 @@ const Survey = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in">
       <div className="max-w-2xl w-full space-y-8">
         <div className="space-y-4">
-          <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-            Question 1 of 1
-          </div>
           <h2 className="text-3xl font-bold text-gray-900">
             How are you feeling today?
           </h2>
-          <p className="text-gray-600">
-            Select the option that best describes your current mood.
-          </p>
         </div>
 
         <RadioGroup
