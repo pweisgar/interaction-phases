@@ -61,9 +61,9 @@ const Results = () => {
     // New color scheme using grays
     const colors = {
       pre: '#222222',    // Dark Gray
-      during: '#888888', // Medium Gray
-      post: '#AAADB0',   // Light Gray
-    };
+      during: '#007BFF', // Blue
+      post: '#28A745',   // Green
+    };    
 
     let lastPos = positions[0];
     let lastTimestamp = lastPos.timestamp;
