@@ -75,3 +75,41 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #6B8E74;
 }
+
+/* Ensure unselected radio buttons are white inside with black border */
+[data-state="unchecked"] {
+  background-color: white !important;
+  border-color: black !important;
+}
+
+/* Make selected radio buttons completely black */
+[data-state="checked"] {
+  background-color: black !important;
+  border-color: black !important;
+}
+
+/* Remove default blue focus ring */
+[data-state="checked"]:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: black !important;
+}
+
+/* Remove the default browser styling for radio buttons */
+input[type="radio"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+/* Hide any default inner dot */
+input[type="radio"]::before {
+  display: none !important;
+}
+
+/* Remove unwanted Radix UI focus ring */
+[data-state="checked"]:focus-visible {
+  box-shadow: none !important;
+}
+
+
