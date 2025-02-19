@@ -69,6 +69,52 @@ const ResultsMulti = () => {
   const [showAnalysisQ1, setShowAnalysisQ1] = useState(true);
   const [showAnalysisQ2, setShowAnalysisQ2] = useState(true);
 
+  // --- Debug Logging ---
+  useEffect(() => {
+    console.log("ResultsMulti - Survey Context Values:", {
+      startTime: survey.startTime,
+      submitTime: survey.submitTime,
+      firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
+      lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
+      firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
+      lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
+      mousePositions: survey.mousePositions,
+    });
+  }, [survey]);
+
+  // --- Visible Debug Panel (temporary for troubleshooting) ---
+  // This block displays the context values on the page.
+  // Remove it once you've confirmed the values are preserved.
+  const debugInfo = (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        backgroundColor: "rgba(255,255,255,0.9)",
+        padding: "10px",
+        fontSize: "12px",
+        zIndex: 9999,
+      }}
+    >
+      <pre>
+        {JSON.stringify(
+          {
+            startTime: survey.startTime,
+            submitTime: survey.submitTime,
+            firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
+            lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
+            firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
+            lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
+            mousePositions: survey.mousePositions,
+          },
+          null,
+          2
+        )}
+      </pre>
+    </div>
+  );
+
   // --- Replay Logic ---
   const getPhaseAtTimestamp = (timestamp: number) => {
     if (timestamp < survey.firstInteractionTime!) return "pre";
@@ -103,8 +149,8 @@ const ResultsMulti = () => {
     }
     
     const pos = currentFrame === 0
-      ? (positions.length > 0 ? positions[0] : cursorPosition)
-      : positions[currentFrame - 1];
+      ? (survey.mousePositions.length > 0 ? survey.mousePositions[0] : cursorPosition)
+      : survey.mousePositions[currentFrame - 1];
     const currentTimestamp = currentFrame === 0 ? survey.startTime! : pos.timestamp;
     const phase = basePhase(getPhaseAtTimestamp(currentTimestamp));
     const currentColor = PHASE_COLORS[phase];
@@ -214,6 +260,9 @@ const ResultsMulti = () => {
   return (
     <div className="min-h-screen relative bg-secondary">
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-40" />
+
+      {/* Visible Debug Panel */}
+      {debugInfo}
 
       {/* Survey Replica (exactly as in MultiQuestionSurvey) */}
       <div className="relative min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in z-30">
