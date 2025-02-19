@@ -218,6 +218,8 @@ const ResultsMulti = () => {
       {/* Survey Replica (exactly as in MultiQuestionSurvey) */}
       <div className="relative min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in z-30">
         <div className="max-w-2xl w-full space-y-8">
+          {/* Spacer div to match the survey page layout */}
+          <div className="space-y-4"></div>
           {QUESTIONS.map((q) => (
             <div key={q.id} data-question-id={q.id} className="space-y-4">
               <h3 className="text-xl font-semibold text-gray-800">{q.title}</h3>
