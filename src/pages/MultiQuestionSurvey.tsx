@@ -22,12 +22,11 @@ const MultiQuestionSurvey = () => {
     const trackMouseMovement = (e: MouseEvent) => {
       if (isSubmitting) return;
 
-      const phase =
-        !survey.firstInteractionTime
-          ? "pre"
-          : !survey.lastInteractionTime
-          ? "during"
-          : "post";
+      const phase = !survey.firstInteractionTime
+        ? "pre" as const
+        : !survey.lastInteractionTime
+        ? "during" as const
+        : "post" as const;
 
       const position = {
         x: e.clientX,
