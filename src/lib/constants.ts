@@ -1,8 +1,11 @@
 
 export const PHASE_COLORS = {
-  pre: "#808080",    // Grey
-  during: "#007BFF", // Blue
-  post: "#28a745",   // Green
+  pre1: "#808080",    // Grey
+  during1: "#007BFF", // Blue
+  post1: "#28a745",   // Green
+  pre2: "#A9A9A9",    // Dark Grey
+  during2: "#0056b3", // Dark Blue
+  post2: "#218838",   // Dark Green
 } as const;
 
 export const QUESTIONS = [

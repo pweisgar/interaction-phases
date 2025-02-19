@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSurvey } from "@/contexts/SurveyContext";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ const MultiQuestionSurvey = () => {
   const survey = useSurvey();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: number]: string }>({});
+  const [currentQuestionId, setCurrentQuestionId] = useState<number>(1);
+  const lastPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     survey.resetSurvey();
@@ -22,25 +24,55 @@ const MultiQuestionSurvey = () => {
     const trackMouseMovement = (e: MouseEvent) => {
       if (isSubmitting) return;
 
-      const phase = !survey.firstInteractionTime
-        ? "pre" as const
-        : !survey.lastInteractionTime
-        ? "during" as const
-        : "post" as const;
+      // Get the element under the cursor
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      const questionElement = element?.closest('[data-question-id]');
+      const questionId = questionElement 
+        ? parseInt(questionElement.getAttribute('data-question-id') || '1', 10)
+        : currentQuestionId;
+
+      // Update current question if changed
+      if (questionId !== currentQuestionId) {
+        setCurrentQuestionId(questionId);
+        console.log(`Cursor moved to question ${questionId}`);
+      }
+
+      // Determine the phase based on interactions and current question
+      const getPhase = () => {
+        const hasInteractedWithQuestion = selectedAnswers[questionId];
+        
+        if (!hasInteractedWithQuestion) {
+          return `pre${questionId}` as const;
+        }
+        
+        const isLastInteraction = Object.keys(selectedAnswers).length === QUESTIONS.length;
+        if (isLastInteraction) {
+          return `post${questionId}` as const;
+        }
+        
+        return `during${questionId}` as const;
+      };
 
       const position = {
         x: e.clientX,
         y: e.clientY,
         timestamp: Date.now(),
-        phase,
+        phase: getPhase(),
+        questionId
       };
 
-      survey.addMousePosition(position);
+      // Only add position if it's different from the last one
+      if (!lastPositionRef.current || 
+          lastPositionRef.current.x !== position.x || 
+          lastPositionRef.current.y !== position.y) {
+        survey.addMousePosition(position);
+        lastPositionRef.current = { x: position.x, y: position.y };
+      }
     };
 
     window.addEventListener("mousemove", trackMouseMovement);
     return () => window.removeEventListener("mousemove", trackMouseMovement);
-  }, [isSubmitting]);
+  }, [isSubmitting, currentQuestionId, selectedAnswers]);
 
   const handleAnswerSelect = (questionId: number, value: string) => {
     if (!survey.firstInteractionTime) {
