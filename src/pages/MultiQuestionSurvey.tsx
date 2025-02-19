@@ -103,9 +103,6 @@ const MultiQuestionSurvey = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in">
       <div className="max-w-2xl w-full space-y-8">
         <div className="space-y-4">
-          <h2 className="text-3xl font-bold text-gray-900 text-center">
-            Multi-Question Survey
-          </h2>
         </div>
 
         {/* Render each question with a RadioGroup, identical logic to single question */}
