@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 const QUESTIONS = [
   {
     id: 1,
-    title: "Question 1: How satisfied are you with your work-life balance?",
+    title: "How satisfied are you with your work-life balance?",
     answers: [
       "Very Satisfied",
       "Somewhat Satisfied",
@@ -21,7 +21,7 @@ const QUESTIONS = [
   },
   {
     id: 2,
-    title: "Question 2: How often do you feel stressed during daily routines?",
+    title: "How often do you feel stressed during daily routines?",
     answers: [
       "Never",
       "Rarely",
