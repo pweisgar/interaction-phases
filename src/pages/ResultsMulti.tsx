@@ -138,27 +138,56 @@ const ResultsMulti = () => {
   // --- Metrics Calculation for Each Question ---
   const calculateMetricsForQuestion = (qId: number) => {
     if (!survey.startTime || !survey.submitTime) return null;
-    // Use multi-question fields from context:
-    const firstTime = qId === 1 ? survey.firstInteractionTimeQ1 : survey.firstInteractionTimeQ2;
-    const lastTime = qId === 1 ? survey.lastInteractionTimeQ1 : survey.lastInteractionTimeQ2;
-    if (!firstTime) {
-      const total = survey.submitTime - survey.startTime;
+    
+    if (qId === 1) {
+      // For Q1, calculations remain relative to survey.startTime.
+      const firstTime = survey.firstInteractionTimeQ1;
+      const lastTime = survey.lastInteractionTimeQ1;
+      if (!firstTime) {
+        const total = survey.submitTime - survey.startTime;
+        return {
+          pre: { time: total, percentage: "100" },
+          during: { time: 0, percentage: "0" },
+          post: { time: 0, percentage: "0" },
+        };
+      }
+      const preTime = firstTime - survey.startTime;
+      const duringTime = (lastTime || firstTime) - firstTime;
+      const postTime = survey.submitTime - (lastTime || firstTime);
+      const total = survey.submitTime - survey.startTime || 1;
       return {
-        pre: { time: total, percentage: "100" },
-        during: { time: 0, percentage: "0" },
-        post: { time: 0, percentage: "0" },
+        pre: { time: preTime, percentage: ((preTime / total) * 100).toFixed(0) },
+        during: { time: duringTime, percentage: ((duringTime / total) * 100).toFixed(0) },
+        post: { time: postTime, percentage: ((postTime / total) * 100).toFixed(0) },
+      };
+    } else {
+      // For Q2, pre interaction time should start when Q1 ends.
+      const firstTime = survey.firstInteractionTimeQ2;
+      const lastTime = survey.lastInteractionTimeQ2;
+      // Define Q1's "end" as its last interaction time, or if missing, its first interaction,
+      // or as a fallback, the overall survey start time.
+      const q1End = survey.lastInteractionTimeQ1 || survey.firstInteractionTimeQ1 || survey.startTime;
+      
+      if (!firstTime) {
+        const total = survey.submitTime - q1End;
+        return {
+          pre: { time: total, percentage: "100" },
+          during: { time: 0, percentage: "0" },
+          post: { time: 0, percentage: "0" },
+        };
+      }
+      // Calculate Q2's pre time relative to Q1's end.
+      const preTime = firstTime - q1End;
+      const duringTime = (lastTime || firstTime) - firstTime;
+      const postTime = survey.submitTime - (lastTime || firstTime);
+      const total = survey.submitTime - q1End || 1;
+      return {
+        pre: { time: preTime, percentage: ((preTime / total) * 100).toFixed(0) },
+        during: { time: duringTime, percentage: ((duringTime / total) * 100).toFixed(0) },
+        post: { time: postTime, percentage: ((postTime / total) * 100).toFixed(0) },
       };
     }
-    const preTime = firstTime - survey.startTime;
-    const duringTime = (lastTime || firstTime) - firstTime;
-    const postTime = survey.submitTime - (lastTime || firstTime);
-    const total = survey.submitTime - survey.startTime || 1;
-    return {
-      pre: { time: preTime, percentage: ((preTime / total) * 100).toFixed(0) },
-      during: { time: duringTime, percentage: ((duringTime / total) * 100).toFixed(0) },
-      post: { time: postTime, percentage: ((postTime / total) * 100).toFixed(0) },
-    };
-  };
+  };  
 
   const metricsQ1 = calculateMetricsForQuestion(1);
   const metricsQ2 = calculateMetricsForQuestion(2);
@@ -361,7 +390,7 @@ const ResultsMulti = () => {
               <Button
                 variant="outline"
                 className="w-full py-4 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
-                onClick={() => navigate("/multi-question-survey")}
+                onClick={() => navigate("/StartMulti")}
               >
                 Restart Multi-Question Survey
               </Button>
