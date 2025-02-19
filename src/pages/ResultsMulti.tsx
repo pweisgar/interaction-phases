@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,8 +34,12 @@ const ResultsMulti = () => {
       return null;
     }
 
-    const firstInteraction = questionPositions.find(pos => pos.phase === "during");
-    const lastInteraction = [...questionPositions].reverse().find(pos => pos.phase === "during");
+    const firstInteraction = questionPositions.find(pos => 
+      pos.phase === (questionId === 1 ? 'during1' : 'during2')
+    );
+    const lastInteraction = [...questionPositions].reverse().find(pos => 
+      pos.phase === (questionId === 1 ? 'during1' : 'during2')
+    );
 
     const preTime = firstInteraction ? firstInteraction.timestamp - survey.startTime : 0;
     const duringTime = lastInteraction && firstInteraction ? 
@@ -198,7 +203,10 @@ const ResultsMulti = () => {
                 showAnalysis={showAnalysis}
                 setShowAnalysis={setShowAnalysis}
                 isAnimating={isAnimating}
-                onReplayClick={handleReplay}
+                onReplayClick={() => {
+                  setCurrentFrame(0);
+                  setIsAnimating(true);
+                }}
                 navigate={navigate}
               />
             </div>
