@@ -6,39 +6,8 @@ import { useSurvey } from "@/contexts/SurveyContext";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-
-// Two questions, each with five answers (matching MultiQuestionSurvey)
-const QUESTIONS = [
-  {
-    id: 1,
-    title: "Question 1: How satisfied are you with your work-life balance?",
-    answers: [
-      "Very Satisfied",
-      "Somewhat Satisfied",
-      "Neutral",
-      "Somewhat Dissatisfied",
-      "Very Dissatisfied",
-    ],
-  },
-  {
-    id: 2,
-    title: "Question 2: How often do you feel stressed during daily routines?",
-    answers: [
-      "Never",
-      "Rarely",
-      "Sometimes",
-      "Often",
-      "Always",
-    ],
-  },
-];
-
-// Colors for different phases
-const PHASE_COLORS = {
-  pre: "#808080",    // Grey
-  during: "#007BFF", // Blue
-  post: "#28a745",   // Green
-};
+import { MetricsPanel } from "@/components/results-multi/MetricsPanel";
+import { PHASE_COLORS, QUESTIONS } from "@/lib/constants";
 
 const ResultsMulti = () => {
   const navigate = useNavigate();
@@ -47,13 +16,13 @@ const ResultsMulti = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(true);
-  const [replayStartTime, setReplayStartTime] = useState(0);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  const [selectedAnswers] = useState<{ [qId: number]: string }>({}); // For display only
 
   // Calculate metrics for each question
   const calculateMetricsForQuestion = (questionId: number) => {
-    if (!survey.startTime || !survey.firstInteractionTime || !survey.submitTime) return null;
+    if (!survey.startTime || !survey.firstInteractionTime || !survey.submitTime) {
+      console.log("Missing required timestamps");
+      return null;
+    }
 
     // Get positions relevant to this question
     const questionPositions = survey.mousePositions.filter(pos => {
@@ -62,7 +31,10 @@ const ResultsMulti = () => {
       return elem.closest(`[data-question-id="${questionId}"]`) !== null;
     });
 
-    if (questionPositions.length === 0) return null;
+    if (questionPositions.length === 0) {
+      console.log(`No positions found for question ${questionId}`);
+      return null;
+    }
 
     const firstInteraction = questionPositions.find(pos => pos.phase === "during");
     const lastInteraction = [...questionPositions].reverse().find(pos => pos.phase === "during");
@@ -73,25 +45,30 @@ const ResultsMulti = () => {
     const postTime = survey.submitTime - (lastInteraction?.timestamp || survey.startTime);
     const totalTime = preTime + duringTime + postTime;
 
+    console.log(`Metrics for Q${questionId}:`, { preTime, duringTime, postTime, totalTime });
+
     return {
       pre: {
         time: preTime,
-        percentage: ((preTime / totalTime) * 100).toFixed(0),
+        percentage: ((preTime / totalTime) * 100).toFixed(1),
       },
       during: {
         time: duringTime,
-        percentage: ((duringTime / totalTime) * 100).toFixed(0),
+        percentage: ((duringTime / totalTime) * 100).toFixed(1),
       },
       post: {
         time: postTime,
-        percentage: ((postTime / totalTime) * 100).toFixed(0),
+        percentage: ((postTime / totalTime) * 100).toFixed(1),
       },
     };
   };
 
   const drawMouseTrail = () => {
     const canvas = canvasRef.current;
-    if (!canvas || !survey.mousePositions.length) return;
+    if (!canvas || !survey.mousePositions.length) {
+      console.log("No canvas or positions to draw");
+      return;
+    }
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -117,7 +94,6 @@ const ResultsMulti = () => {
         ctx.fillStyle = PHASE_COLORS[lastPos.phase];
         ctx.fill();
         
-        // Add time label
         ctx.fillStyle = "#555";
         ctx.font = "12px Arial";
         ctx.fillText(`${(timeDiff / 1000).toFixed(1)}s`, lastPos.x + 8, lastPos.y);
@@ -136,8 +112,14 @@ const ResultsMulti = () => {
     }
   };
 
+  const handleReplay = () => {
+    setCurrentFrame(0);
+    setIsAnimating(true);
+  };
+
   useEffect(() => {
     if (!survey.startTime) {
+      console.log("No survey data, redirecting to home");
       navigate("/");
       return;
     }
@@ -158,24 +140,21 @@ const ResultsMulti = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Animation effect
   useEffect(() => {
-    if (isAnimating) {
-      if (currentFrame === 0) {
-        setReplayStartTime(Date.now());
-      }
-      
-      if (currentFrame < survey.mousePositions.length) {
-        const timer = setTimeout(() => {
-          setCurrentFrame(prev => prev + 1);
-          drawMouseTrail();
-        }, 10);
-        return () => clearTimeout(timer);
-      } else {
-        setIsAnimating(false);
-      }
+    if (isAnimating && currentFrame < survey.mousePositions.length) {
+      const timer = setTimeout(() => {
+        setCurrentFrame(prev => prev + 1);
+        drawMouseTrail();
+      }, 10);
+      return () => clearTimeout(timer);
+    } else if (isAnimating && currentFrame >= survey.mousePositions.length) {
+      setIsAnimating(false);
     }
   }, [isAnimating, currentFrame]);
+
+  console.log("Survey data:", survey);
+  console.log("Current frame:", currentFrame);
+  console.log("Mouse positions:", survey.mousePositions);
 
   return (
     <div className="min-h-screen relative bg-secondary">
@@ -192,7 +171,7 @@ const ResultsMulti = () => {
               <h3 className="text-xl font-semibold text-gray-800">{question.title}</h3>
               <RadioGroup
                 className="space-y-4"
-                value={selectedAnswers[question.id] || ""}
+                value=""
               >
                 {question.answers.map((answer) => (
                   <div key={answer} className="flex items-center space-x-3">
@@ -217,50 +196,15 @@ const ResultsMulti = () => {
                 ))}
               </RadioGroup>
 
-              {/* Metrics Panel for each question */}
-              <div className={`fixed ${question.id === 1 ? 'top-4' : 'top-64'} right-4 w-96 transition-transform duration-300 transform ${
-                showAnalysis ? 'translate-x-0' : 'translate-x-full'
-              }`}>
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
-                      Results - Q{question.id}
-                    </div>
-                    {question.id === 1 && (
-                      <button
-                        onClick={() => setShowAnalysis(!showAnalysis)}
-                        className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
-                      >
-                        {showAnalysis ? '→' : '←'}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    {Object.entries(calculateMetricsForQuestion(question.id) || {}).map(([phase, data]) => (
-                      <div key={phase} className="bg-gray-50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: PHASE_COLORS[phase] }}
-                          />
-                          <p className="text-sm font-medium text-gray-900 capitalize">
-                            {phase} Interaction
-                          </p>
-                        </div>
-                        <div className="flex justify-between items-baseline">
-                          <p className="text-2xl font-bold text-gray-700">
-                            {data.percentage}%
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {(data.time / 1000).toFixed(2)}s
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <MetricsPanel
+                questionId={question.id}
+                metrics={calculateMetricsForQuestion(question.id)}
+                showAnalysis={showAnalysis}
+                setShowAnalysis={setShowAnalysis}
+                isAnimating={isAnimating}
+                onReplayClick={handleReplay}
+                navigate={navigate}
+              />
             </div>
           ))}
 
@@ -270,35 +214,6 @@ const ResultsMulti = () => {
           >
             Submit Survey
           </Button>
-
-          <div className="space-y-4 mt-8">
-            <Button
-              className="w-full py-4 text-base font-medium bg-gray-900 hover:bg-gray-800 text-white"
-              onClick={() => {
-                setCurrentFrame(0);
-                setIsAnimating(true);
-              }}
-              disabled={isAnimating}
-            >
-              {isAnimating ? "Replaying..." : "Replay Movement"}
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="w-full py-4 text-base font-medium"
-              onClick={() => navigate("/")}
-            >
-              Return to Single Survey
-            </Button>
-
-            <Button
-              variant="outline"
-              className="w-full py-4 text-base font-medium"
-              onClick={() => navigate("/startMulti")}
-            >
-              Return to Multi Survey
-            </Button>
-          </div>
         </div>
       </div>
 
