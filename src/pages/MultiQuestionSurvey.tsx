@@ -71,14 +71,29 @@ const MultiQuestionSurvey = () => {
 
   // When user selects an answer for a question
   const handleAnswerSelect = (questionId: number, value: string) => {
-    // If no first interaction, set it
+    // Keep the existing single-question logic for overall first/last times:
     if (!survey.firstInteractionTime) {
       survey.setFirstInteractionTime(Date.now());
     } else {
-      // Else, we might be in "during"
       survey.setLastInteractionTime(Date.now());
     }
 
+    // **Add** multi-question tracking for Q1 or Q2:
+    if (questionId === 1) {
+      if (!survey.firstInteractionTimeQ1) {
+        survey.setFirstInteractionTimeQ1(Date.now());
+      } else {
+        survey.setLastInteractionTimeQ1(Date.now());
+      }
+    } else if (questionId === 2) {
+      if (!survey.firstInteractionTimeQ2) {
+        survey.setFirstInteractionTimeQ2(Date.now());
+      } else {
+        survey.setLastInteractionTimeQ2(Date.now());
+      }
+    }
+
+    // Update selected answers
     setSelectedAnswers((prev) => ({
       ...prev,
       [questionId]: value,
@@ -102,10 +117,9 @@ const MultiQuestionSurvey = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in">
       <div className="max-w-2xl w-full space-y-8">
-        <div className="space-y-4">
-        </div>
+        <div className="space-y-4"></div>
 
-        {/* Render each question with a RadioGroup, identical logic to single question */}
+        {/* Render each question */}
         {QUESTIONS.map((question) => (
           <div key={question.id} className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-800">{question.title}</h3>
