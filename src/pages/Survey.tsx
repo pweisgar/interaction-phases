@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
@@ -25,15 +24,14 @@ const Survey = () => {
     survey.setStartTime(Date.now());
 
     const trackMouseMovement = (e: MouseEvent) => {
-      const phase = survey.firstInteractionTime === null ? 'pre1' : 
-        (survey.lastInteractionTime === null ? 'during1' : 'post1');
+      const phase = survey.firstInteractionTime === null ? 'pre' : 
+        (survey.lastInteractionTime === null ? 'during' : 'post');
       
       survey.addMousePosition({
         x: e.clientX,
         y: e.clientY,
         timestamp: Date.now(),
         phase,
-        questionId: 1
       });
     };
 

@@ -1,17 +1,13 @@
 
-import * as React from 'react';
-import { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
-type InteractionPhase = 
-  | 'pre1' | 'during1' | 'post1' 
-  | 'pre2' | 'during2' | 'post2';
+type InteractionPhase = 'pre' | 'during' | 'post';
 
 interface MousePosition {
   x: number;
   y: number;
   timestamp: number;
   phase: InteractionPhase;
-  questionId: number;
 }
 
 interface SurveyContextType {
@@ -42,7 +38,6 @@ export const SurveyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const addMousePosition = (position: MousePosition) => {
     setMousePositions(prev => [...prev, position]);
-    console.log("Added mouse position:", position);
   };
 
   const resetSurvey = () => {
@@ -52,7 +47,6 @@ export const SurveyProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setSubmitTime(null);
     setSelectedAnswer(null);
     setMousePositions([]);
-    console.log("Survey reset");
   };
 
   const value = {
