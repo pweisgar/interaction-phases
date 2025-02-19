@@ -280,12 +280,12 @@ const ResultsMulti = () => {
               </div>
               <button
                 onClick={() => setShowAnalysisQ1(false)}
-                className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100"
               >
                 →
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {["pre", "during", "post"].map((phase) => {
                 const data = metricsQ1[phase];
                 return (
@@ -320,12 +320,12 @@ const ResultsMulti = () => {
               </div>
               <button
                 onClick={() => setShowAnalysisQ2(false)}
-                className="text-gray-500 hover:text-gray-700 p-2 rounded-lg hover:bg-gray-100"
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100"
               >
                 →
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {["pre", "during", "post"].map((phase) => {
                 const data = metricsQ2[phase];
                 return (
@@ -349,10 +349,10 @@ const ResultsMulti = () => {
               })}
             </div>
             {/* Replay & Restart Buttons (only in Q2 panel) */}
-            <div className="space-y-4 mt-4">
+            <div className="space-y-2 mt-2">
               <Button
                 variant="outline"
-                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                className="w-full py-4 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
                 onClick={handleReplay}
                 disabled={isAnimating}
               >
@@ -360,14 +360,14 @@ const ResultsMulti = () => {
               </Button>
               <Button
                 variant="outline"
-                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                className="w-full py-4 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
                 onClick={() => navigate("/multi-question-survey")}
               >
                 Restart Multi-Question Survey
               </Button>
               <Button
                 variant="outline"
-                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                className="w-full py-4 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
                 onClick={() => navigate("/")}
               >
                 Restart Single Question Survey
