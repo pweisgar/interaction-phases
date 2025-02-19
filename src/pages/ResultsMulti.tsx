@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -17,14 +16,12 @@ const ResultsMulti = () => {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(true);
 
-  // Calculate metrics for each question
   const calculateMetricsForQuestion = (questionId: number) => {
     if (!survey.startTime || !survey.firstInteractionTime || !survey.submitTime) {
       console.log("Missing required timestamps");
       return null;
     }
 
-    // Get positions relevant to this question
     const questionPositions = survey.mousePositions.filter(pos => {
       const elem = document.elementFromPoint(pos.x, pos.y);
       if (!elem) return false;
@@ -163,7 +160,6 @@ const ResultsMulti = () => {
         className="absolute inset-0 pointer-events-none z-40"
       />
 
-      {/* Survey Page Replica */}
       <div className="relative min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in z-30">
         <div className="max-w-2xl w-full space-y-8">
           {QUESTIONS.map((question) => (
@@ -217,7 +213,6 @@ const ResultsMulti = () => {
         </div>
       </div>
 
-      {/* Toggle Analysis Button when hidden */}
       {!showAnalysis && (
         <button
           onClick={() => setShowAnalysis(true)}

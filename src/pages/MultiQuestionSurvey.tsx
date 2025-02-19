@@ -42,15 +42,15 @@ const MultiQuestionSurvey = () => {
         const hasInteractedWithQuestion = selectedAnswers[questionId];
         
         if (!hasInteractedWithQuestion) {
-          return `pre${questionId}` as const;
+          return questionId === 1 ? 'pre1' : 'pre2';
         }
         
         const isLastInteraction = Object.keys(selectedAnswers).length === QUESTIONS.length;
         if (isLastInteraction) {
-          return `post${questionId}` as const;
+          return questionId === 1 ? 'post1' : 'post2';
         }
         
-        return `during${questionId}` as const;
+        return questionId === 1 ? 'during1' : 'during2';
       };
 
       const position = {
