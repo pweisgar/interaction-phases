@@ -8,8 +8,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { QUESTIONS } from "@/lib/constants";
 
-type InteractionPhase = 'pre1' | 'during1' | 'post1' | 'pre2' | 'during2' | 'post2';
-
 const MultiQuestionSurvey = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
@@ -40,7 +38,7 @@ const MultiQuestionSurvey = () => {
       }
 
       // Determine the phase based on interactions and current question
-      const getPhase = (): InteractionPhase => {
+      const getPhase = () => {
         const hasInteractedWithQuestion = selectedAnswers[questionId];
         
         if (!hasInteractedWithQuestion) {
