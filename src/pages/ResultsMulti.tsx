@@ -221,7 +221,7 @@ const ResultsMulti = () => {
           {QUESTIONS.map((q) => (
             <div key={q.id} data-question-id={q.id} className="space-y-4">
               <h3 className="text-xl font-semibold text-gray-800">{q.title}</h3>
-              <RadioGroup className="space-y-4" value="" disabled>
+              <RadioGroup className="space-y-4" value="">
                 {q.answers.map((answer) => (
                   <div key={answer} className="flex items-center space-x-3">
                     <RadioGroupItem
@@ -233,9 +233,11 @@ const ResultsMulti = () => {
                         focus:outline-none focus:ring-0 focus:ring-offset-0
                         before:hidden after:hidden
                       "
-                      disabled
                     />
-                    <Label htmlFor={`q${q.id}-${answer}`} className="flex-grow cursor-not-allowed text-gray-500">
+                    <Label
+                      htmlFor={`q${q.id}-${answer}`}
+                      className="flex-grow cursor-pointer text-gray-800"
+                    >
                       {answer}
                     </Label>
                   </div>
@@ -243,7 +245,6 @@ const ResultsMulti = () => {
               </RadioGroup>
             </div>
           ))}
-          {/* Disabled submit button (exactly as in MultiQuestionSurvey) */}
           <Button
             className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
             disabled
