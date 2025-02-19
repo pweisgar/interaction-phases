@@ -352,7 +352,7 @@ const ResultsMulti = () => {
             <div className="space-y-4 mt-4">
               <Button
                 variant="outline"
-                className="w-full py-1 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
                 onClick={handleReplay}
                 disabled={isAnimating}
               >
@@ -360,14 +360,14 @@ const ResultsMulti = () => {
               </Button>
               <Button
                 variant="outline"
-                className="w-full py-1 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
-                onClick={() => navigate("/startMulti")}
+                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                onClick={() => navigate("/multi-question-survey")}
               >
                 Restart Multi-Question Survey
               </Button>
               <Button
                 variant="outline"
-                className="w-full py-1 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
+                className="w-full py-4 text-base font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
                 onClick={() => navigate("/")}
               >
                 Restart Single Question Survey
