@@ -82,39 +82,6 @@ const ResultsMulti = () => {
     });
   }, [survey]);
 
-  // --- Visible Debug Panel (temporary for troubleshooting) ---
-  // This block displays the context values on the page.
-  // Remove it once you've confirmed the values are preserved.
-  const debugInfo = (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        backgroundColor: "rgba(255,255,255,0.9)",
-        padding: "10px",
-        fontSize: "12px",
-        zIndex: 9999,
-      }}
-    >
-      <pre>
-        {JSON.stringify(
-          {
-            startTime: survey.startTime,
-            submitTime: survey.submitTime,
-            firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
-            lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
-            firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
-            lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
-            mousePositions: survey.mousePositions,
-          },
-          null,
-          2
-        )}
-      </pre>
-    </div>
-  );
-
   // --- Replay Logic ---
   const getPhaseAtTimestamp = (timestamp: number) => {
     if (timestamp < survey.firstInteractionTime!) return "pre";
@@ -261,9 +228,6 @@ const ResultsMulti = () => {
     <div className="min-h-screen relative bg-secondary">
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-40" />
 
-      {/* Visible Debug Panel */}
-      {debugInfo}
-
       {/* Survey Replica (exactly as in MultiQuestionSurvey) */}
       <div className="relative min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in z-30">
         <div className="max-w-2xl w-full space-y-8">
@@ -306,12 +270,12 @@ const ResultsMulti = () => {
       </div>
 
       {/* Analysis Panels Container (stacked on right) */}
-      <div className="fixed top-4 right-4 space-y-4 z-50">
+      <div className="fixed top-20 right-40 space-y-4 z-50">
         {/* Panel for Question 1 */}
         {showAnalysisQ1 && metricsQ1 ? (
           <div className="w-96 bg-white rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
-              <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
                 Results – Q1
               </div>
               <button
@@ -325,10 +289,10 @@ const ResultsMulti = () => {
               {["pre", "during", "post"].map((phase) => {
                 const data = metricsQ1[phase];
                 return (
-                  <div key={phase} className="bg-gray-50 rounded-lg p-4">
+                  <div key={phase} className="bg-gray-50 rounded-lg p-0.25">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHASE_COLORS[phase] }} />
-                      <p className="text-sm font-medium text-gray-900 capitalize">
+                      <p className="text-xs font-medium text-gray-900 capitalize">
                         {phase} Interaction
                       </p>
                     </div>
@@ -351,7 +315,7 @@ const ResultsMulti = () => {
         {showAnalysisQ2 && metricsQ2 ? (
           <div className="w-96 bg-white rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
-              <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+              <div className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs font-medium">
                 Results – Q2
               </div>
               <button
@@ -365,10 +329,10 @@ const ResultsMulti = () => {
               {["pre", "during", "post"].map((phase) => {
                 const data = metricsQ2[phase];
                 return (
-                  <div key={phase} className="bg-gray-50 rounded-lg p-4">
+                  <div key={phase} className="bg-gray-50 rounded-lg p-0.25">
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHASE_COLORS[phase] }} />
-                      <p className="text-sm font-medium text-gray-900 capitalize">
+                      <p className="text-xs font-medium text-gray-900 capitalize">
                         {phase} Interaction
                       </p>
                     </div>
