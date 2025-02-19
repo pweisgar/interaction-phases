@@ -16,7 +16,7 @@ const ResultsMulti = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(true);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(0);
 
   useEffect(() => {
     if (!survey.startTime) {
