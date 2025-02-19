@@ -294,6 +294,14 @@ const Results = () => {
             >
               Restart Single Question Survey
             </Button>
+
+            <Button
+              variant="outline"
+              className="w-full py-4 text-base font-medium"
+              onClick={() => navigate("/startMulti")} 
+            >
+              Proceed to Multi Question Survey
+            </Button>
           </div>
         </div>
       </div>
