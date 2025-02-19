@@ -10,6 +10,7 @@ import Survey from "./pages/Survey";
 import Results from "./pages/Results";
 import StartMulti from "./pages/StartMulti";  // Import new Start Multi Page
 import MultiQuestionSurvey from "./pages/MultiQuestionSurvey";
+import ResultsMulti from "./pages/ResultsMulti";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/results" element={<Results />} />
             <Route path="/startMulti" element={<StartMulti />} /> {/* New Route */}
             <Route path="/MultiQuestionSurvey" element={<MultiQuestionSurvey />} /> {/* Define your multi-question page */}
+            <Route path="/results-multi" element={<ResultsMulti />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
