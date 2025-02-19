@@ -16,38 +16,111 @@ const ResultsMulti = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(true);
+  const animationRef = useRef<number>();
+
+  useEffect(() => {
+    if (!survey.startTime) {
+      console.log("No survey data, redirecting to home");
+      navigate("/");
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Set canvas size to match window
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      if (!isAnimating) {
+        drawMouseTrail();
+      }
+    };
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  const drawMouseTrail = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !survey.mousePositions.length) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 1; i < currentFrame && i < survey.mousePositions.length; i++) {
+      const prevPos = survey.mousePositions[i - 1];
+      const pos = survey.mousePositions[i];
+
+      // Draw line
+      ctx.beginPath();
+      ctx.moveTo(prevPos.x, prevPos.y);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.strokeStyle = PHASE_COLORS[pos.phase];
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw pause indicators
+      const timeDiff = pos.timestamp - prevPos.timestamp;
+      if (timeDiff > 500) {
+        ctx.beginPath();
+        ctx.arc(prevPos.x, prevPos.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = PHASE_COLORS[prevPos.phase];
+        ctx.fill();
+
+        // Add pause duration text
+        ctx.fillStyle = "#666";
+        ctx.font = "12px Arial";
+        ctx.fillText(`${(timeDiff / 1000).toFixed(1)}s`, prevPos.x + 10, prevPos.y);
+      }
+    }
+
+    // Draw current position
+    if (currentFrame > 0 && currentFrame <= survey.mousePositions.length) {
+      const currentPos = survey.mousePositions[currentFrame - 1];
+      ctx.beginPath();
+      ctx.arc(currentPos.x, currentPos.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle = `${PHASE_COLORS[currentPos.phase]}88`;
+      ctx.fill();
+    }
+  };
 
   const calculateMetricsForQuestion = (questionId: number) => {
-    if (!survey.startTime || !survey.firstInteractionTime || !survey.submitTime) {
-      console.log("Missing required timestamps");
+    if (!survey.mousePositions.length || !survey.startTime || !survey.submitTime) {
+      console.log("Missing data for metrics calculation");
       return null;
     }
 
-    const questionPositions = survey.mousePositions.filter(pos => {
-      const elem = document.elementFromPoint(pos.x, pos.y);
-      if (!elem) return false;
-      return elem.closest(`[data-question-id="${questionId}"]`) !== null;
-    });
-
-    if (questionPositions.length === 0) {
+    const questionPositions = survey.mousePositions.filter(pos => pos.questionId === questionId);
+    
+    if (!questionPositions.length) {
       console.log(`No positions found for question ${questionId}`);
       return null;
     }
 
-    const firstInteraction = questionPositions.find(pos => 
-      pos.phase === (questionId === 1 ? 'during1' : 'during2')
-    );
-    const lastInteraction = [...questionPositions].reverse().find(pos => 
-      pos.phase === (questionId === 1 ? 'during1' : 'during2')
-    );
+    const phases = {
+      pre: questionPositions.filter(pos => pos.phase === `pre${questionId}`),
+      during: questionPositions.filter(pos => pos.phase === `during${questionId}`),
+      post: questionPositions.filter(pos => pos.phase === `post${questionId}`)
+    };
 
-    const preTime = firstInteraction ? firstInteraction.timestamp - survey.startTime : 0;
-    const duringTime = lastInteraction && firstInteraction ? 
-      lastInteraction.timestamp - firstInteraction.timestamp : 0;
-    const postTime = survey.submitTime - (lastInteraction?.timestamp || survey.startTime);
-    const totalTime = preTime + duringTime + postTime;
+    const getPhaseTime = (positions: typeof questionPositions) => {
+      if (positions.length === 0) return 0;
+      return positions[positions.length - 1].timestamp - positions[0].timestamp;
+    };
 
-    console.log(`Metrics for Q${questionId}:`, { preTime, duringTime, postTime, totalTime });
+    const preTime = getPhaseTime(phases.pre);
+    const duringTime = getPhaseTime(phases.during);
+    const postTime = getPhaseTime(phases.post);
+    const totalTime = preTime + duringTime + postTime || 1; // Prevent division by zero
 
     return {
       pre: {
@@ -65,98 +138,35 @@ const ResultsMulti = () => {
     };
   };
 
-  const drawMouseTrail = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !survey.mousePositions.length) {
-      console.log("No canvas or positions to draw");
-      return;
-    }
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    let lastPos = survey.mousePositions[0];
-    survey.mousePositions.slice(1, currentFrame).forEach((pos) => {
-      ctx.beginPath();
-      ctx.moveTo(lastPos.x, lastPos.y);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.strokeStyle = PHASE_COLORS[pos.phase];
-      ctx.lineWidth = 2;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.stroke();
-
-      // Draw dots for pauses
-      const timeDiff = pos.timestamp - lastPos.timestamp;
-      if (timeDiff > 1000) {
-        ctx.beginPath();
-        ctx.arc(lastPos.x, lastPos.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = PHASE_COLORS[lastPos.phase];
-        ctx.fill();
-        
-        ctx.fillStyle = "#555";
-        ctx.font = "12px Arial";
-        ctx.fillText(`${(timeDiff / 1000).toFixed(1)}s`, lastPos.x + 8, lastPos.y);
+  useEffect(() => {
+    if (isAnimating) {
+      if (currentFrame >= survey.mousePositions.length) {
+        setIsAnimating(false);
+        setCurrentFrame(survey.mousePositions.length);
+      } else {
+        drawMouseTrail();
+        animationRef.current = requestAnimationFrame(() => {
+          setCurrentFrame(prev => prev + 1);
+        });
       }
-
-      lastPos = pos;
-    });
-
-    // Draw current cursor position
-    if (currentFrame > 0) {
-      const pos = survey.mousePositions[currentFrame - 1];
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
-      ctx.fillStyle = `${PHASE_COLORS[pos.phase]}88`;
-      ctx.fill();
+    } else {
+      drawMouseTrail();
     }
-  };
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [currentFrame, isAnimating]);
 
   const handleReplay = () => {
     setCurrentFrame(0);
     setIsAnimating(true);
   };
 
-  useEffect(() => {
-    if (!survey.startTime) {
-      console.log("No survey data, redirecting to home");
-      navigate("/");
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      drawMouseTrail();
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (isAnimating && currentFrame < survey.mousePositions.length) {
-      const timer = setTimeout(() => {
-        setCurrentFrame(prev => prev + 1);
-        drawMouseTrail();
-      }, 10);
-      return () => clearTimeout(timer);
-    } else if (isAnimating && currentFrame >= survey.mousePositions.length) {
-      setIsAnimating(false);
-    }
-  }, [isAnimating, currentFrame]);
-
-  console.log("Survey data:", survey);
-  console.log("Current frame:", currentFrame);
   console.log("Mouse positions:", survey.mousePositions);
+  console.log("Current frame:", currentFrame);
 
   return (
     <div className="min-h-screen relative bg-secondary">
@@ -203,10 +213,7 @@ const ResultsMulti = () => {
                 showAnalysis={showAnalysis}
                 setShowAnalysis={setShowAnalysis}
                 isAnimating={isAnimating}
-                onReplayClick={() => {
-                  setCurrentFrame(0);
-                  setIsAnimating(true);
-                }}
+                onReplayClick={handleReplay}
                 navigate={navigate}
               />
             </div>
