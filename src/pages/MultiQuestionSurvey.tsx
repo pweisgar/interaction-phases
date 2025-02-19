@@ -40,10 +40,37 @@ const MultiQuestionSurvey = () => {
   // Track selected answers for each question
   const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: number]: string }>({});
 
+  // Debug: log the SurveyContext values whenever they change.
+  useEffect(() => {
+    console.log("MultiQuestionSurvey - Survey Context Values:", {
+      startTime: survey.startTime,
+      firstInteractionTime: survey.firstInteractionTime,
+      lastInteractionTime: survey.lastInteractionTime,
+      firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
+      lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
+      firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
+      lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
+      mousePositions: survey.mousePositions,
+      submitTime: survey.submitTime,
+    });
+  }, [
+    survey.startTime,
+    survey.firstInteractionTime,
+    survey.lastInteractionTime,
+    survey.firstInteractionTimeQ1,
+    survey.lastInteractionTimeQ1,
+    survey.firstInteractionTimeQ2,
+    survey.lastInteractionTimeQ2,
+    survey.mousePositions,
+    survey.submitTime,
+  ]);
+
   useEffect(() => {
     // Reset & start the survey as soon as the component mounts
     survey.resetSurvey();
-    survey.setStartTime(Date.now());
+    const now = Date.now();
+    survey.setStartTime(now);
+    console.log("Survey started at", now);
 
     // Mouse tracking logic (same as single question)
     const trackMouseMovement = (e: MouseEvent) => {
@@ -67,43 +94,54 @@ const MultiQuestionSurvey = () => {
 
     window.addEventListener("mousemove", trackMouseMovement);
     return () => window.removeEventListener("mousemove", trackMouseMovement);
-  }, [isSubmitting]);
+  }, [isSubmitting, survey]);
 
   // When user selects an answer for a question
   const handleAnswerSelect = (questionId: number, value: string) => {
-    // Keep the existing single-question logic for overall first/last times:
+    const now = Date.now();
+
+    // Update overall (single-question) times
     if (!survey.firstInteractionTime) {
-      survey.setFirstInteractionTime(Date.now());
+      survey.setFirstInteractionTime(now);
+      console.log(`Set overall firstInteractionTime at ${now}`);
     } else {
-      survey.setLastInteractionTime(Date.now());
+      survey.setLastInteractionTime(now);
+      console.log(`Set overall lastInteractionTime at ${now}`);
     }
 
-    // **Add** multi-question tracking for Q1 or Q2:
+    // Multi-question tracking for Q1 or Q2:
     if (questionId === 1) {
       if (!survey.firstInteractionTimeQ1) {
-        survey.setFirstInteractionTimeQ1(Date.now());
+        survey.setFirstInteractionTimeQ1(now);
+        console.log(`Set firstInteractionTimeQ1 at ${now}`);
       } else {
-        survey.setLastInteractionTimeQ1(Date.now());
+        survey.setLastInteractionTimeQ1(now);
+        console.log(`Set lastInteractionTimeQ1 at ${now}`);
       }
     } else if (questionId === 2) {
       if (!survey.firstInteractionTimeQ2) {
-        survey.setFirstInteractionTimeQ2(Date.now());
+        survey.setFirstInteractionTimeQ2(now);
+        console.log(`Set firstInteractionTimeQ2 at ${now}`);
       } else {
-        survey.setLastInteractionTimeQ2(Date.now());
+        survey.setLastInteractionTimeQ2(now);
+        console.log(`Set lastInteractionTimeQ2 at ${now}`);
       }
     }
 
     // Update selected answers
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: value,
-    }));
+    setSelectedAnswers((prev) => {
+      const updated = { ...prev, [questionId]: value };
+      console.log("Updated selectedAnswers:", updated);
+      return updated;
+    });
   };
 
   // Submit both questions
   const handleSubmit = () => {
     setIsSubmitting(true);
-    survey.setSubmitTime(Date.now());
+    const now = Date.now();
+    survey.setSubmitTime(now);
+    console.log("Survey submitted at", now);
 
     // Short delay before navigating
     setTimeout(() => {
@@ -111,7 +149,7 @@ const MultiQuestionSurvey = () => {
     }, 150);
   };
 
-  // Check if both questions answered
+  // Check if both questions are answered
   const allAnswered = QUESTIONS.every((q) => selectedAnswers[q.id]);
 
   return (
