@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSurvey } from "@/contexts/SurveyContext";
+import { useSurvey, MousePosition, InteractionPhase } from "@/contexts/SurveyContext";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -32,75 +32,86 @@ const QUESTIONS = [
   },
 ];
 
+// Phase colors for both questions (same for pre/during/post)
+const PHASE_COLORS = {
+  pre: "#808080",    // Grey
+  during: "#007BFF", // Blue
+  post: "#28a745",   // Green
+};
+
+// Modified basePhase function that strips the question-specific suffix
+const basePhase = (phase: string): "pre" | "during" | "post" => {
+  if (phase.endsWith("1") || phase.endsWith("2")) {
+    // Remove the trailing digit (question id)
+    return phase.slice(0, phase.length - 1) as "pre" | "during" | "post";
+  }
+  if (phase.startsWith("pre")) return "pre";
+  if (phase.startsWith("during")) return "during";
+  return "post";
+};
+
 const MultiQuestionSurvey = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Track selected answers for each question
   const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: number]: string }>({});
+  // NEW: Track the current active question id (1 or 2)
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null);
 
-  // Run this effect only once on mount, not when isSubmitting changes.
   useEffect(() => {
-    // Reset & start the survey as soon as the component mounts
+    // Reset & start the survey when the component mounts
     survey.resetSurvey();
     const now = Date.now();
     survey.setStartTime(now);
     console.log("Survey started at", now);
 
-    // Mouse tracking logic (same as single question)
+    // Mouse tracking logic now takes the currentQuestionId into account.
     const trackMouseMovement = (e: MouseEvent) => {
       if (isSubmitting) return;
-
-      // Determine overall phase logic
-      const phase =
-        survey.firstInteractionTime === null
-          ? "pre"
-          : survey.lastInteractionTime === null
-          ? "during"
-          : "post";
-
+    
+      let phase: InteractionPhase;
+      if (currentQuestionId === 1) {
+        phase =
+          survey.firstInteractionTimeQ1 === null
+            ? ("pre1" as InteractionPhase)
+            : survey.lastInteractionTimeQ1 === null
+            ? ("during1" as InteractionPhase)
+            : ("post1" as InteractionPhase);
+      } else if (currentQuestionId === 2) {
+        phase =
+          survey.firstInteractionTimeQ2 === null
+            ? ("pre2" as InteractionPhase)
+            : survey.lastInteractionTimeQ2 === null
+            ? ("during2" as InteractionPhase)
+            : ("post2" as InteractionPhase);
+      } else {
+        phase =
+          survey.firstInteractionTime === null
+            ? ("pre" as InteractionPhase)
+            : survey.lastInteractionTime === null
+            ? ("during" as InteractionPhase)
+            : ("post" as InteractionPhase);
+      }
+    
       survey.addMousePosition({
         x: e.clientX,
         y: e.clientY,
         timestamp: Date.now(),
         phase,
       });
-    };
+    };    
 
     window.addEventListener("mousemove", trackMouseMovement);
     return () => window.removeEventListener("mousemove", trackMouseMovement);
-  }, []); // <-- Dependency array is now empty
+  }, [isSubmitting, currentQuestionId, survey]);
 
-  // Debug: log the SurveyContext values whenever they change.
-  useEffect(() => {
-    console.log("MultiQuestionSurvey - Survey Context Values:", {
-      startTime: survey.startTime,
-      firstInteractionTime: survey.firstInteractionTime,
-      lastInteractionTime: survey.lastInteractionTime,
-      firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
-      lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
-      firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
-      lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
-      mousePositions: survey.mousePositions,
-      submitTime: survey.submitTime,
-    });
-  }, [
-    survey.startTime,
-    survey.firstInteractionTime,
-    survey.lastInteractionTime,
-    survey.firstInteractionTimeQ1,
-    survey.lastInteractionTimeQ1,
-    survey.firstInteractionTimeQ2,
-    survey.lastInteractionTimeQ2,
-    survey.mousePositions,
-    survey.submitTime,
-  ]);
-
-  // When user selects an answer for a question
+  // When a user selects an answer, update both the selected answer and the active question id.
   const handleAnswerSelect = (questionId: number, value: string) => {
+    setCurrentQuestionId(questionId);
     const now = Date.now();
 
-    // Update overall (single-question) times:
+    // Update overall (single-question) interaction times
     if (!survey.firstInteractionTime) {
       survey.setFirstInteractionTime(now);
       console.log(`Set overall firstInteractionTime at ${now}`);
@@ -109,7 +120,7 @@ const MultiQuestionSurvey = () => {
       console.log(`Set overall lastInteractionTime at ${now}`);
     }
 
-    // Multi-question tracking for Q1 or Q2:
+    // Update multi-question specific times
     if (questionId === 1) {
       if (!survey.firstInteractionTimeQ1) {
         survey.setFirstInteractionTimeQ1(now);
@@ -128,7 +139,6 @@ const MultiQuestionSurvey = () => {
       }
     }
 
-    // Update selected answers
     setSelectedAnswers((prev) => {
       const updated = { ...prev, [questionId]: value };
       console.log("Updated selectedAnswers:", updated);
@@ -143,7 +153,7 @@ const MultiQuestionSurvey = () => {
     survey.setSubmitTime(now);
     console.log("Survey submitted at", now);
 
-    // Short delay before navigating
+    // Short delay before navigating to results page
     setTimeout(() => {
       navigate("/results-multi");
     }, 150);
@@ -156,21 +166,19 @@ const MultiQuestionSurvey = () => {
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in">
       <div className="max-w-2xl w-full space-y-8">
         <div className="space-y-4"></div>
-
-        {/* Render each question */}
-        {QUESTIONS.map((question) => (
-          <div key={question.id} className="space-y-4">
-            <h3 className="text-xl font-semibold text-gray-800">{question.title}</h3>
+        {QUESTIONS.map((q) => (
+          <div key={q.id} className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-800">{q.title}</h3>
             <RadioGroup
               className="space-y-4"
-              value={selectedAnswers[question.id] || ""}
-              onValueChange={(val) => handleAnswerSelect(question.id, val)}
+              value={selectedAnswers[q.id] || ""}
+              onValueChange={(val) => handleAnswerSelect(q.id, val)}
             >
-              {question.answers.map((answer) => (
+              {q.answers.map((answer) => (
                 <div key={answer} className="flex items-center space-x-3">
                   <RadioGroupItem
                     value={answer}
-                    id={`q${question.id}-${answer}`}
+                    id={`q${q.id}-${answer}`}
                     className="
                       appearance-none w-5 h-5 border-2 border-black rounded-full bg-white
                       checked:bg-black checked:border-black
@@ -179,7 +187,7 @@ const MultiQuestionSurvey = () => {
                     "
                   />
                   <Label
-                    htmlFor={`q${question.id}-${answer}`}
+                    htmlFor={`q${q.id}-${answer}`}
                     className="flex-grow cursor-pointer"
                   >
                     {answer}
@@ -189,22 +197,8 @@ const MultiQuestionSurvey = () => {
             </RadioGroup>
           </div>
         ))}
-
         <Button
-          className="
-            w-full 
-            py-6 
-            text-lg 
-            font-medium 
-            transition-all 
-            duration-200 
-            transform 
-            hover:scale-105 
-            bg-gray-300 
-            hover:bg-gray-400 
-            text-black 
-            disabled:opacity-50
-          "
+          className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
           onClick={handleSubmit}
           disabled={!allAnswered || isSubmitting}
         >

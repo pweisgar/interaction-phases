@@ -5,7 +5,7 @@ import { createContext, useContext, useState } from "react";
  * Expanded InteractionPhase to handle both single-question ("pre", "during", "post")
  * and multi-question phases ("pre1", "during1", "post1", "pre2", "during2", "post2").
  */
-type InteractionPhase =
+export type InteractionPhase =
   | "pre"
   | "during"
   | "post"
