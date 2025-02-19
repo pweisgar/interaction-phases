@@ -14,7 +14,7 @@ const Landing = () => {
           className="inline-flex items-center justify-center px-8 py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 animate-slide-up bg-gray-300 hover:bg-gray-400 text-black"
           onClick={() => navigate('/survey')}
         >
-          Start Survey
+          Start Single Question Survey
         </Button>
       </div>
     </div>
