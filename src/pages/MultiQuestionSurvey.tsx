@@ -36,9 +36,40 @@ const MultiQuestionSurvey = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   // Track selected answers for each question
   const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: number]: string }>({});
+
+  // Run this effect only once on mount, not when isSubmitting changes.
+  useEffect(() => {
+    // Reset & start the survey as soon as the component mounts
+    survey.resetSurvey();
+    const now = Date.now();
+    survey.setStartTime(now);
+    console.log("Survey started at", now);
+
+    // Mouse tracking logic (same as single question)
+    const trackMouseMovement = (e: MouseEvent) => {
+      if (isSubmitting) return;
+
+      // Determine overall phase logic
+      const phase =
+        survey.firstInteractionTime === null
+          ? "pre"
+          : survey.lastInteractionTime === null
+          ? "during"
+          : "post";
+
+      survey.addMousePosition({
+        x: e.clientX,
+        y: e.clientY,
+        timestamp: Date.now(),
+        phase,
+      });
+    };
+
+    window.addEventListener("mousemove", trackMouseMovement);
+    return () => window.removeEventListener("mousemove", trackMouseMovement);
+  }, []); // <-- Dependency array is now empty
 
   // Debug: log the SurveyContext values whenever they change.
   useEffect(() => {
@@ -65,42 +96,11 @@ const MultiQuestionSurvey = () => {
     survey.submitTime,
   ]);
 
-  useEffect(() => {
-    // Reset & start the survey as soon as the component mounts
-    survey.resetSurvey();
-    const now = Date.now();
-    survey.setStartTime(now);
-    console.log("Survey started at", now);
-
-    // Mouse tracking logic (same as single question)
-    const trackMouseMovement = (e: MouseEvent) => {
-      if (isSubmitting) return;
-
-      // We'll do overall phase logic here (one set of first/last times)
-      const phase =
-        survey.firstInteractionTime === null
-          ? "pre"
-          : survey.lastInteractionTime === null
-          ? "during"
-          : "post";
-
-      survey.addMousePosition({
-        x: e.clientX,
-        y: e.clientY,
-        timestamp: Date.now(),
-        phase,
-      });
-    };
-
-    window.addEventListener("mousemove", trackMouseMovement);
-    return () => window.removeEventListener("mousemove", trackMouseMovement);
-  }, [isSubmitting, survey]);
-
   // When user selects an answer for a question
   const handleAnswerSelect = (questionId: number, value: string) => {
     const now = Date.now();
 
-    // Update overall (single-question) times
+    // Update overall (single-question) times:
     if (!survey.firstInteractionTime) {
       survey.setFirstInteractionTime(now);
       console.log(`Set overall firstInteractionTime at ${now}`);
