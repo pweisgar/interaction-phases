@@ -32,9 +32,15 @@ const QUESTIONS = [
 ];
 
 const PHASE_COLORS = {
-  pre: "#808080",    // Grey
-  during: "#007BFF", // Blue
-  post: "#28a745",   // Green
+  pre: "#808080",    // Grey - matching pre interaction color
+  during: "#007BFF", // Blue - matching during interaction color
+  post: "#28a745",   // Green - matching post interaction color
+  pre1: "#808080",
+  during1: "#007BFF",
+  post1: "#28a745",
+  pre2: "#808080",
+  during2: "#007BFF",
+  post2: "#28a745"
 };
 
 const basePhase = (phase: string): "pre" | "during" | "post" => {
@@ -255,8 +261,8 @@ const ResultsMulti = () => {
     <div className="min-h-screen relative bg-secondary">
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-40" />
 
-      <div className="relative min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in z-30">
-        <div className="max-w-2xl w-full space-y-8">
+      <div className="relative min-h-screen flex flex-col items-center p-8 bg-secondary animate-fade-in z-30">
+        <div className="max-w-2xl w-full space-y-8 translate-y-[10vh]">
           <div className="space-y-4"></div>
           {QUESTIONS.map((q) => (
             <div key={q.id} data-question-id={q.id} className="space-y-4">
