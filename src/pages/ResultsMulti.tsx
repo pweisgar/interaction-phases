@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
+// Two-question layout, identical to your multi-question survey
 const QUESTIONS = [
   {
     id: 1,
@@ -31,18 +32,17 @@ const QUESTIONS = [
   },
 ];
 
+// A unified color scheme for both questions
 const PHASE_COLORS = {
-  pre: "#808080",    // Grey - matching pre interaction color
-  during: "#007BFF", // Blue - matching during interaction color
-  post: "#28a745",   // Green - matching post interaction color
-  pre1: "#808080",
-  during1: "#007BFF",
-  post1: "#28a745",
-  pre2: "#808080",
-  during2: "#007BFF",
-  post2: "#28a745"
+  pre: "#808080",    // Grey
+  during: "#007BFF", // Blue
+  post: "#28a745",   // Green
 };
 
+/**
+ * Convert multi-question phases like "pre1", "during2" into their base phase:
+ * "pre", "during", or "post".
+ */
 const basePhase = (phase: string): "pre" | "during" | "post" => {
   if (phase.startsWith("pre")) return "pre";
   if (phase.startsWith("during")) return "during";
@@ -54,9 +54,12 @@ const ResultsMulti = () => {
   const survey = useSurvey();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // State for replay
   const [isAnimating, setIsAnimating] = useState(false);
   const [currentFrame, setCurrentFrame] = useState(0);
   const [replayStartTime, setReplayStartTime] = useState(0);
+
+  // Cursor position (if needed before we have real data)
   const [cursorPosition, setCursorPosition] = useState<MousePosition>({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2,
@@ -64,22 +67,85 @@ const ResultsMulti = () => {
     phase: "pre",
   });
 
+  // Toggles for separate Q1 and Q2 panels
   const [showAnalysisQ1, setShowAnalysisQ1] = useState(true);
   const [showAnalysisQ2, setShowAnalysisQ2] = useState(true);
 
+  // For debugging, you can see context values
   useEffect(() => {
-    console.log("ResultsMulti - Survey Context Values:", {
-      startTime: survey.startTime,
-      submitTime: survey.submitTime,
-      firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
-      lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
-      firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
-      lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
-      mousePositions: survey.mousePositions,
-    });
+    console.log("ResultsMulti Context:", survey);
   }, [survey]);
 
+  /**
+   * Approach #2: Accumulate times by parsing mousePositions for each question,
+   * summing intervals in which the user was in "pre1", "during1", "post1" (Q1)
+   * or "pre2", "during2", "post2" (Q2).
+   */
+  const calculateMetricsForQuestion = (qId: number) => {
+    // Filter positions for just this question
+    const questionPositions = survey.mousePositions.filter(
+      (pos) => pos.questionId === qId
+    );
+    if (!questionPositions.length) return null;
+
+    // Sort by timestamp
+    questionPositions.sort((a, b) => a.timestamp - b.timestamp);
+
+    let preTime = 0;
+    let duringTime = 0;
+    let postTime = 0;
+
+    // Accumulate intervals by looking at consecutive positions
+    for (let i = 0; i < questionPositions.length - 1; i++) {
+      const current = questionPositions[i];
+      const next = questionPositions[i + 1];
+      const dt = next.timestamp - current.timestamp;
+      if (dt <= 0) continue; // skip negative or zero intervals
+
+      // Convert "pre1"/"during1" => "pre"/"during"
+      const base = basePhase(current.phase);
+      if (base === "pre") {
+        preTime += dt;
+      } else if (base === "during") {
+        duringTime += dt;
+      } else {
+        postTime += dt;
+      }
+    }
+
+    // Optionally handle the last position if needed, but typically
+    // we only measure intervals between consecutive positions.
+
+    // Compute total, and derive percentages
+    const total = preTime + duringTime + postTime;
+    if (total === 0) return null;
+
+    return {
+      pre: {
+        time: preTime,
+        percentage: ((preTime / total) * 100).toFixed(0),
+      },
+      during: {
+        time: duringTime,
+        percentage: ((duringTime / total) * 100).toFixed(0),
+      },
+      post: {
+        time: postTime,
+        percentage: ((postTime / total) * 100).toFixed(0),
+      },
+    };
+  };
+
+  const metricsQ1 = calculateMetricsForQuestion(1);
+  const metricsQ2 = calculateMetricsForQuestion(2);
+
+  /**
+   * Replay logic uses the global timeline (survey.mousePositions)
+   * and draws the trail up to currentFrame.
+   */
   const getPhaseAtTimestamp = (timestamp: number) => {
+    // For single global timeline, fallback if needed
+    if (!survey.startTime) return "pre";
     if (timestamp < survey.firstInteractionTime!) return "pre";
     if (timestamp < (survey.lastInteractionTime || survey.firstInteractionTime)!) return "during";
     return "post";
@@ -92,114 +158,53 @@ const ResultsMulti = () => {
     if (!ctx) return;
     const positions = survey.mousePositions;
     if (!positions.length) return;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Draw lines up to currentFrame
     if (currentFrame > 0) {
       let lastPos = positions[0];
       positions.slice(1, currentFrame).forEach((pos) => {
         ctx.beginPath();
         ctx.moveTo(lastPos.x, lastPos.y);
         ctx.lineTo(pos.x, pos.y);
+
         const phase = basePhase(pos.phase);
         ctx.strokeStyle = PHASE_COLORS[phase];
         ctx.lineWidth = 2;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         ctx.stroke();
+
         lastPos = pos;
       });
     }
-    
-    const pos = currentFrame === 0
-      ? (survey.mousePositions.length > 0 ? survey.mousePositions[0] : cursorPosition)
-      : survey.mousePositions[currentFrame - 1];
-    const currentTimestamp = currentFrame === 0 ? survey.startTime! : pos.timestamp;
+
+    // Draw cursor at current position
+    const pos =
+      currentFrame === 0
+        ? positions.length > 0
+          ? positions[0]
+          : cursorPosition
+        : positions[currentFrame - 1];
+
+    const currentTimestamp =
+      currentFrame === 0 ? survey.startTime! : pos.timestamp;
     const phase = basePhase(getPhaseAtTimestamp(currentTimestamp));
     const currentColor = PHASE_COLORS[phase];
-    
+
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
     ctx.fillStyle = `${currentColor}4D`;
     ctx.fill();
-    
+
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
     ctx.fillStyle = `${currentColor}B3`;
     ctx.fill();
   };
 
-  const calculateMetricsForQuestion = (qId: number) => {
-    if (!survey.startTime || !survey.submitTime) return null;
-    
-    const positions = survey.mousePositions.filter(pos => pos.questionId === qId);
-    if (!positions.length) return null;
-
-    let preTime = 0;
-    let duringTime = 0;
-    let postTime = 0;
-
-    if (qId === 1) {
-      const firstInteraction = survey.firstInteractionTimeQ1;
-      const lastInteraction = survey.lastInteractionTimeQ1;
-      
-      const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp;
-
-      if (firstInteraction) {
-        preTime = Math.max(0, firstInteraction - survey.startTime);
-        
-        if (lastInteraction && lastInteraction > firstInteraction) {
-          duringTime = Math.max(0, lastInteraction - firstInteraction);
-        }
-
-        if (transitionToQ2Time && lastInteraction) {
-          postTime = Math.max(0, transitionToQ2Time - lastInteraction);
-        }
-      }
-    } else {
-      const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp || survey.startTime;
-      
-      const firstInteraction = survey.firstInteractionTimeQ2;
-      const lastInteraction = survey.lastInteractionTimeQ2;
-
-      if (firstInteraction) {
-        preTime = Math.max(0, firstInteraction - transitionToQ2Time);
-        
-        if (lastInteraction && lastInteraction > firstInteraction) {
-          duringTime = Math.max(0, lastInteraction - firstInteraction);
-        }
-
-        if (lastInteraction) {
-          postTime = Math.max(0, survey.submitTime - lastInteraction);
-        }
-      }
-    }
-
-    preTime = Math.max(0, preTime);
-    duringTime = Math.max(0, duringTime);
-    postTime = Math.max(0, postTime);
-
-    const total = preTime + duringTime + postTime;
-    if (total === 0) return null;
-
-    return {
-      pre: {
-        time: preTime,
-        percentage: ((preTime / total) * 100).toFixed(0)
-      },
-      during: {
-        time: duringTime,
-        percentage: ((duringTime / total) * 100).toFixed(0)
-      },
-      post: {
-        time: postTime,
-        percentage: ((postTime / total) * 100).toFixed(0)
-      }
-    };
-  };
-
-  const metricsQ1 = calculateMetricsForQuestion(1);
-  const metricsQ2 = calculateMetricsForQuestion(2);
-
+  // Animate the replay in "real time"
   useEffect(() => {
     if (isAnimating) {
       if (currentFrame === 0) {
@@ -209,18 +214,30 @@ const ResultsMulti = () => {
       if (currentFrame < survey.mousePositions.length) {
         const nextPos = survey.mousePositions[currentFrame];
         const elapsed = Date.now() - replayStartTime;
-        const delay = Math.max(0, nextPos.timestamp - survey.startTime! - elapsed);
+        const delay = Math.max(
+          0,
+          nextPos.timestamp - (survey.startTime ?? 0) - elapsed
+        );
+
         const timer = setTimeout(() => {
-          setCurrentFrame(prev => prev + 1);
+          setCurrentFrame((prev) => prev + 1);
           drawMouseTrailAndCursor();
         }, delay);
+
         return () => clearTimeout(timer);
       } else {
         setIsAnimating(false);
       }
     }
-  }, [isAnimating, currentFrame, survey.mousePositions, survey.startTime, replayStartTime]);
+  }, [
+    isAnimating,
+    currentFrame,
+    survey.mousePositions,
+    survey.startTime,
+    replayStartTime,
+  ]);
 
+  // Set up the canvas, handle window resize
   useEffect(() => {
     if (!survey.startTime) {
       navigate("/");
@@ -230,28 +247,25 @@ const ResultsMulti = () => {
     if (!canvas) return;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+
     const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       drawMouseTrailAndCursor();
     };
     window.addEventListener("resize", handleResize);
+
     return () => window.removeEventListener("resize", handleResize);
   }, [navigate, survey.startTime]);
 
+  // Initialize the cursor position if no data
   useEffect(() => {
     if (survey.mousePositions?.length > 0) {
       setCursorPosition(survey.mousePositions[0]);
-    } else {
-      setCursorPosition({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-        timestamp: Date.now(),
-        phase: "pre",
-      });
     }
   }, [survey.mousePositions]);
 
+  // Single replay button in Q2 panel
   const handleReplay = () => {
     setCurrentFrame(0);
     setIsAnimating(true);
@@ -259,15 +273,16 @@ const ResultsMulti = () => {
 
   return (
     <div className="min-h-screen relative bg-secondary">
+      {/* Canvas for mouse trail */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-40" />
 
+      {/* Survey Replica */}
       <div className="relative min-h-screen flex flex-col items-center p-8 bg-secondary animate-fade-in z-30">
         <div className="max-w-2xl w-full space-y-8 translate-y-[10vh]">
-          <div className="space-y-4"></div>
           {QUESTIONS.map((q) => (
             <div key={q.id} data-question-id={q.id} className="space-y-4">
               <h3 className="text-xl font-semibold text-gray-800">{q.title}</h3>
-              <RadioGroup className="space-y-4" value="">
+              <RadioGroup className="space-y-4" value="" disabled>
                 {q.answers.map((answer) => (
                   <div key={answer} className="flex items-center space-x-3">
                     <RadioGroupItem
@@ -279,10 +294,11 @@ const ResultsMulti = () => {
                         focus:outline-none focus:ring-0 focus:ring-offset-0
                         before:hidden after:hidden
                       "
+                      disabled
                     />
                     <Label
                       htmlFor={`q${q.id}-${answer}`}
-                      className="flex-grow cursor-pointer text-gray-800"
+                      className="flex-grow cursor-not-allowed text-gray-500"
                     >
                       {answer}
                     </Label>
@@ -291,6 +307,7 @@ const ResultsMulti = () => {
               </RadioGroup>
             </div>
           ))}
+          {/* Disabled submit button */}
           <Button
             className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
             disabled
@@ -300,7 +317,9 @@ const ResultsMulti = () => {
         </div>
       </div>
 
+      {/* Analysis Panels */}
       <div className="fixed top-20 right-40 space-y-4 z-50">
+        {/* Panel for Q1 */}
         {showAnalysisQ1 && metricsQ1 ? (
           <div className="w-96 bg-white rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -320,7 +339,10 @@ const ResultsMulti = () => {
                 return (
                   <div key={phase} className="bg-gray-50 rounded-lg p-0.25">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHASE_COLORS[phase] }} />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: PHASE_COLORS[phase] }}
+                      />
                       <p className="text-xs font-medium text-gray-900 capitalize">
                         {phase} Interaction
                       </p>
@@ -340,6 +362,7 @@ const ResultsMulti = () => {
           </div>
         ) : null}
 
+        {/* Panel for Q2 (includes replay & restart) */}
         {showAnalysisQ2 && metricsQ2 ? (
           <div className="w-96 bg-white rounded-xl shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
@@ -359,7 +382,10 @@ const ResultsMulti = () => {
                 return (
                   <div key={phase} className="bg-gray-50 rounded-lg p-0.25">
                     <div className="flex items-center gap-2 mb-1">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PHASE_COLORS[phase] }} />
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: PHASE_COLORS[phase] }}
+                      />
                       <p className="text-xs font-medium text-gray-900 capitalize">
                         {phase} Interaction
                       </p>
@@ -388,7 +414,7 @@ const ResultsMulti = () => {
               <Button
                 variant="outline"
                 className="w-full py-4 text-sm transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
-                onClick={() => navigate("/StartMulti")}
+                onClick={() => navigate("/startMulti")}
               >
                 Restart Multi-Question Survey
               </Button>
@@ -404,6 +430,7 @@ const ResultsMulti = () => {
         ) : null}
       </div>
 
+      {/* Show toggle if either panel is hidden */}
       {(!showAnalysisQ1 || !showAnalysisQ2) && (
         <button
           onClick={() => {
