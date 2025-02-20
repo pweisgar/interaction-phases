@@ -1,12 +1,12 @@
+
 import * as React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSurvey } from "@/contexts/SurveyContext";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-// Two questions, each with five answers
 const QUESTIONS = [
   {
     id: 1,
@@ -36,130 +36,140 @@ const MultiQuestionSurvey = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Track selected answers for each question
   const [selectedAnswers, setSelectedAnswers] = useState<{ [qId: number]: string }>({});
+  const [currentQuestionId, setCurrentQuestionId] = useState<number>(1);
+  
+  // Track first and last selection times for each question
+  const firstSelectionTimes = useRef<{ [qId: number]: number }>({});
+  const lastSelectionTimes = useRef<{ [qId: number]: number }>({});
+  const questionTransitionTime = useRef<number | null>(null);
 
-  // Run this effect only once on mount, not when isSubmitting changes.
   useEffect(() => {
-    // Reset & start the survey as soon as the component mounts
     survey.resetSurvey();
-    const now = Date.now();
-    survey.setStartTime(now);
-    console.log("Survey started at", now);
+    const startTime = Date.now();
+    survey.setStartTime(startTime);
+    console.log("Survey started at:", startTime);
 
-    // Mouse tracking logic (same as single question)
-    const trackMouseMovement = (e: MouseEvent) => {
-      if (isSubmitting) return;
-
-      // Determine overall phase logic
-      const phase =
-        survey.firstInteractionTime === null
-          ? "pre"
-          : survey.lastInteractionTime === null
-          ? "during"
-          : "post";
-
-      survey.addMousePosition({
-        x: e.clientX,
-        y: e.clientY,
-        timestamp: Date.now(),
-        phase,
-      });
+    // Set up mouseenter/mouseleave event handlers for questions
+    const questions = document.querySelectorAll('[data-question-id]');
+    
+    const handleMouseEnter = (e: MouseEvent) => {
+      const element = e.currentTarget as HTMLElement;
+      const questionId = parseInt(element.getAttribute('data-question-id') || '1', 10);
+      const timestamp = Date.now();
+      
+      if (currentQuestionId === 1 && questionId === 2) {
+        questionTransitionTime.current = timestamp;
+        console.log("Transition from Q1 to Q2 at:", timestamp);
+      }
+      
+      setCurrentQuestionId(questionId);
     };
 
-    window.addEventListener("mousemove", trackMouseMovement);
-    return () => window.removeEventListener("mousemove", trackMouseMovement);
-  }, []); // <-- Dependency array is now empty
-
-  // Debug: log the SurveyContext values whenever they change.
-  useEffect(() => {
-    console.log("MultiQuestionSurvey - Survey Context Values:", {
-      startTime: survey.startTime,
-      firstInteractionTime: survey.firstInteractionTime,
-      lastInteractionTime: survey.lastInteractionTime,
-      firstInteractionTimeQ1: survey.firstInteractionTimeQ1,
-      lastInteractionTimeQ1: survey.lastInteractionTimeQ1,
-      firstInteractionTimeQ2: survey.firstInteractionTimeQ2,
-      lastInteractionTimeQ2: survey.lastInteractionTimeQ2,
-      mousePositions: survey.mousePositions,
-      submitTime: survey.submitTime,
+    questions.forEach(question => {
+      question.addEventListener('mouseenter', handleMouseEnter as EventListener);
     });
-  }, [
-    survey.startTime,
-    survey.firstInteractionTime,
-    survey.lastInteractionTime,
-    survey.firstInteractionTimeQ1,
-    survey.lastInteractionTimeQ1,
-    survey.firstInteractionTimeQ2,
-    survey.lastInteractionTimeQ2,
-    survey.mousePositions,
-    survey.submitTime,
-  ]);
 
-  // When user selects an answer for a question
+    return () => {
+      questions.forEach(question => {
+        question.removeEventListener('mouseenter', handleMouseEnter as EventListener);
+      });
+    };
+  }, []);
+
   const handleAnswerSelect = (questionId: number, value: string) => {
-    const now = Date.now();
+    const timestamp = Date.now();
 
-    // Update overall (single-question) times:
-    if (!survey.firstInteractionTime) {
-      survey.setFirstInteractionTime(now);
-      console.log(`Set overall firstInteractionTime at ${now}`);
-    } else {
-      survey.setLastInteractionTime(now);
-      console.log(`Set overall lastInteractionTime at ${now}`);
+    // Track first selection time
+    if (!firstSelectionTimes.current[questionId]) {
+      firstSelectionTimes.current[questionId] = timestamp;
+      if (questionId === 1) {
+        survey.setFirstInteractionTimeQ1(timestamp);
+      } else {
+        survey.setFirstInteractionTimeQ2(timestamp);
+      }
+      console.log(`First selection for Q${questionId} at:`, timestamp);
     }
 
-    // Multi-question tracking for Q1 or Q2:
+    // Always update last selection time
+    lastSelectionTimes.current[questionId] = timestamp;
     if (questionId === 1) {
-      if (!survey.firstInteractionTimeQ1) {
-        survey.setFirstInteractionTimeQ1(now);
-        console.log(`Set firstInteractionTimeQ1 at ${now}`);
-      } else {
-        survey.setLastInteractionTimeQ1(now);
-        console.log(`Set lastInteractionTimeQ1 at ${now}`);
-      }
-    } else if (questionId === 2) {
-      if (!survey.firstInteractionTimeQ2) {
-        survey.setFirstInteractionTimeQ2(now);
-        console.log(`Set firstInteractionTimeQ2 at ${now}`);
-      } else {
-        survey.setLastInteractionTimeQ2(now);
-        console.log(`Set lastInteractionTimeQ2 at ${now}`);
-      }
+      survey.setLastInteractionTimeQ1(timestamp);
+    } else {
+      survey.setLastInteractionTimeQ2(timestamp);
     }
+    console.log(`Latest selection for Q${questionId} at:`, timestamp);
 
     // Update selected answers
-    setSelectedAnswers((prev) => {
-      const updated = { ...prev, [questionId]: value };
-      console.log("Updated selectedAnswers:", updated);
-      return updated;
-    });
+    setSelectedAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
   };
 
-  // Submit both questions
   const handleSubmit = () => {
     setIsSubmitting(true);
-    const now = Date.now();
-    survey.setSubmitTime(now);
-    console.log("Survey submitted at", now);
+    const submitTime = Date.now();
+    survey.setSubmitTime(submitTime);
+    console.log("Survey submitted at:", submitTime);
 
-    // Short delay before navigating
+    // Store the final interaction times in the survey context
+    if (lastSelectionTimes.current[1]) {
+      survey.setLastInteractionTimeQ1(lastSelectionTimes.current[1]);
+    }
+    if (lastSelectionTimes.current[2]) {
+      survey.setLastInteractionTimeQ2(lastSelectionTimes.current[2]);
+    }
+
     setTimeout(() => {
       navigate("/results-multi");
     }, 150);
   };
 
-  // Check if both questions are answered
+  // Track mouse movement for visualization
+  useEffect(() => {
+    const trackMouseMovement = (e: MouseEvent) => {
+      if (isSubmitting) return;
+
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      const questionElement = element?.closest('[data-question-id]');
+      const questionId = questionElement 
+        ? parseInt(questionElement.getAttribute('data-question-id') || '1', 10)
+        : currentQuestionId;
+
+      // Determine the current phase for this position
+      const getPhase = () => {
+        if (questionId === 1) {
+          if (!firstSelectionTimes.current[1]) return 'pre1';
+          if (lastSelectionTimes.current[1] && questionTransitionTime.current) return 'post1';
+          return 'during1';
+        } else {
+          if (!firstSelectionTimes.current[2]) return 'pre2';
+          if (lastSelectionTimes.current[2]) return 'post2';
+          return 'during2';
+        }
+      };
+
+      survey.addMousePosition({
+        x: e.clientX,
+        y: e.clientY,
+        timestamp: Date.now(),
+        phase: getPhase(),
+        questionId
+      });
+    };
+
+    window.addEventListener("mousemove", trackMouseMovement);
+    return () => window.removeEventListener("mousemove", trackMouseMovement);
+  }, [isSubmitting, currentQuestionId]);
+
   const allAnswered = QUESTIONS.every((q) => selectedAnswers[q.id]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 bg-secondary animate-fade-in">
       <div className="max-w-2xl w-full space-y-8">
-        <div className="space-y-4"></div>
-
-        {/* Render each question */}
         {QUESTIONS.map((question) => (
-          <div key={question.id} className="space-y-4">
+          <div key={question.id} data-question-id={question.id} className="space-y-4">
             <h3 className="text-xl font-semibold text-gray-800">{question.title}</h3>
             <RadioGroup
               className="space-y-4"
@@ -191,20 +201,7 @@ const MultiQuestionSurvey = () => {
         ))}
 
         <Button
-          className="
-            w-full 
-            py-6 
-            text-lg 
-            font-medium 
-            transition-all 
-            duration-200 
-            transform 
-            hover:scale-105 
-            bg-gray-300 
-            hover:bg-gray-400 
-            text-black 
-            disabled:opacity-50
-          "
+          className="w-full py-6 text-lg font-medium transition-all duration-200 transform hover:scale-105 bg-gray-300 hover:bg-gray-400 text-black disabled:opacity-50"
           onClick={handleSubmit}
           disabled={!allAnswered || isSubmitting}
         >
