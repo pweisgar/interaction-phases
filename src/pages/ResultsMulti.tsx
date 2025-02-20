@@ -135,7 +135,8 @@ const ResultsMulti = () => {
     if (qId === 1) {
       const firstInteraction = survey.firstInteractionTimeQ1;
       const lastInteraction = survey.lastInteractionTimeQ1;
-      const transitionToQ2Time = positions.find(pos => pos.phase === 'post1')?.timestamp || lastInteraction;
+      
+      const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp;
 
       if (firstInteraction) {
         preTime = Math.max(0, firstInteraction - survey.startTime);
@@ -144,27 +145,26 @@ const ResultsMulti = () => {
           duringTime = Math.max(0, lastInteraction - firstInteraction);
         }
 
-        if (transitionToQ2Time && transitionToQ2Time > lastInteraction) {
+        if (transitionToQ2Time && lastInteraction) {
           postTime = Math.max(0, transitionToQ2Time - lastInteraction);
         }
       }
     } else {
-      const q1Positions = survey.mousePositions.filter(pos => pos.questionId === 1);
-      const transitionTime = q1Positions.length > 0 ? 
-        q1Positions[q1Positions.length - 1].timestamp : 
-        survey.startTime;
+      const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp || survey.startTime;
       
       const firstInteraction = survey.firstInteractionTimeQ2;
       const lastInteraction = survey.lastInteractionTimeQ2;
 
       if (firstInteraction) {
-        preTime = Math.max(0, firstInteraction - transitionTime);
+        preTime = Math.max(0, firstInteraction - transitionToQ2Time);
         
         if (lastInteraction && lastInteraction > firstInteraction) {
           duringTime = Math.max(0, lastInteraction - firstInteraction);
         }
 
-        postTime = Math.max(0, survey.submitTime - lastInteraction);
+        if (lastInteraction) {
+          postTime = Math.max(0, survey.submitTime - lastInteraction);
+        }
       }
     }
 
