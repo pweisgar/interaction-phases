@@ -49,6 +49,22 @@ const basePhase = (phase: string): "pre" | "during" | "post" => {
   return "post";
 };
 
+const getPhaseForTimestamp = (timestamp: number, questionId: number, survey: any) => {
+  if (questionId === 1) {
+    if (timestamp < survey.firstInteractionTimeQ1!) return "pre1";
+    if (timestamp <= survey.lastInteractionTimeQ1!) return "during1";
+    const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp;
+    if (transitionToQ2Time && timestamp <= transitionToQ2Time) return "post1";
+    return "pre2";
+  } else {
+    const transitionToQ2Time = survey.mousePositions.find(pos => pos.questionId === 2)?.timestamp;
+    if (!transitionToQ2Time) return "pre2";
+    if (timestamp < survey.firstInteractionTimeQ2!) return "pre2";
+    if (timestamp <= survey.lastInteractionTimeQ2!) return "during2";
+    return "post2";
+  }
+};
+
 const ResultsMulti = () => {
   const navigate = useNavigate();
   const survey = useSurvey();
@@ -78,55 +94,6 @@ const ResultsMulti = () => {
       mousePositions: survey.mousePositions,
     });
   }, [survey]);
-
-  const getPhaseAtTimestamp = (timestamp: number) => {
-    if (timestamp < survey.firstInteractionTime!) return "pre";
-    if (timestamp < (survey.lastInteractionTime || survey.firstInteractionTime)!) return "during";
-    return "post";
-  };
-
-  const drawMouseTrailAndCursor = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const positions = survey.mousePositions;
-    if (!positions.length) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (currentFrame > 0) {
-      let lastPos = positions[0];
-      positions.slice(1, currentFrame).forEach((pos) => {
-        ctx.beginPath();
-        ctx.moveTo(lastPos.x, lastPos.y);
-        ctx.lineTo(pos.x, pos.y);
-        const phase = basePhase(pos.phase);
-        ctx.strokeStyle = PHASE_COLORS[phase];
-        ctx.lineWidth = 2;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.stroke();
-        lastPos = pos;
-      });
-    }
-    
-    const pos = currentFrame === 0
-      ? (survey.mousePositions.length > 0 ? survey.mousePositions[0] : cursorPosition)
-      : survey.mousePositions[currentFrame - 1];
-    const currentTimestamp = currentFrame === 0 ? survey.startTime! : pos.timestamp;
-    const phase = basePhase(getPhaseAtTimestamp(currentTimestamp));
-    const currentColor = PHASE_COLORS[phase];
-    
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = `${currentColor}4D`;
-    ctx.fill();
-    
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-    ctx.fillStyle = `${currentColor}B3`;
-    ctx.fill();
-  };
 
   const calculateMetricsForQuestion = (qId: number) => {
     if (!survey.startTime || !survey.submitTime) return null;
@@ -251,6 +218,56 @@ const ResultsMulti = () => {
       });
     }
   }, [survey.mousePositions]);
+
+  const drawMouseTrailAndCursor = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const positions = survey.mousePositions;
+    if (!positions.length) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentFrame > 0) {
+      let lastPos = positions[0];
+      positions.slice(1, currentFrame).forEach((pos) => {
+        ctx.beginPath();
+        ctx.moveTo(lastPos.x, lastPos.y);
+        ctx.lineTo(pos.x, pos.y);
+        const phase = basePhase(getPhaseForTimestamp(pos.timestamp, pos.questionId!, survey));
+        ctx.strokeStyle = PHASE_COLORS[phase];
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.stroke();
+        lastPos = pos;
+      });
+    }
+
+    // Draw cursor
+    const currentPos = currentFrame === 0 
+      ? positions[0] 
+      : positions[currentFrame - 1];
+    
+    const currentPhase = basePhase(getPhaseForTimestamp(
+      currentPos.timestamp,
+      currentPos.questionId!,
+      survey
+    ));
+    const currentColor = PHASE_COLORS[currentPhase];
+
+    // Draw cursor circles
+    ctx.beginPath();
+    ctx.arc(currentPos.x, currentPos.y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = `${currentColor}4D`; // 30% opacity
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(currentPos.x, currentPos.y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = `${currentColor}B3`; // 70% opacity
+    ctx.fill();
+  };
 
   const handleReplay = () => {
     setCurrentFrame(0);
