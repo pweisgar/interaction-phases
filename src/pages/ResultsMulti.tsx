@@ -135,40 +135,45 @@ const ResultsMulti = () => {
     if (qId === 1) {
       const firstInteraction = survey.firstInteractionTimeQ1;
       const lastInteraction = survey.lastInteractionTimeQ1;
-      const transitionToQ2 = positions.find(pos => pos.phase === 'post1')?.timestamp;
+      const transitionToQ2Time = positions.find(pos => pos.phase === 'post1')?.timestamp || lastInteraction;
 
       if (firstInteraction) {
-        preTime = firstInteraction - survey.startTime;
+        preTime = Math.max(0, firstInteraction - survey.startTime);
         
-        if (lastInteraction && lastInteraction !== firstInteraction) {
-          duringTime = lastInteraction - firstInteraction;
+        if (lastInteraction && lastInteraction > firstInteraction) {
+          duringTime = Math.max(0, lastInteraction - firstInteraction);
         }
 
-        if (transitionToQ2) {
-          postTime = transitionToQ2 - (lastInteraction || firstInteraction);
+        if (transitionToQ2Time && transitionToQ2Time > lastInteraction) {
+          postTime = Math.max(0, transitionToQ2Time - lastInteraction);
         }
       }
     } else {
-      const q1LastPosition = survey.mousePositions
-        .filter(pos => pos.questionId === 1)
-        .slice(-1)[0];
+      const q1Positions = survey.mousePositions.filter(pos => pos.questionId === 1);
+      const transitionTime = q1Positions.length > 0 ? 
+        q1Positions[q1Positions.length - 1].timestamp : 
+        survey.startTime;
       
-      const q2Start = q1LastPosition ? q1LastPosition.timestamp : survey.startTime;
       const firstInteraction = survey.firstInteractionTimeQ2;
       const lastInteraction = survey.lastInteractionTimeQ2;
 
       if (firstInteraction) {
-        preTime = firstInteraction - q2Start;
+        preTime = Math.max(0, firstInteraction - transitionTime);
         
-        if (lastInteraction && lastInteraction !== firstInteraction) {
-          duringTime = lastInteraction - firstInteraction;
+        if (lastInteraction && lastInteraction > firstInteraction) {
+          duringTime = Math.max(0, lastInteraction - firstInteraction);
         }
 
-        postTime = survey.submitTime - (lastInteraction || firstInteraction);
+        postTime = Math.max(0, survey.submitTime - lastInteraction);
       }
     }
 
-    const total = preTime + duringTime + postTime || 1;
+    preTime = Math.max(0, preTime);
+    duringTime = Math.max(0, duringTime);
+    postTime = Math.max(0, postTime);
+
+    const total = preTime + duringTime + postTime;
+    if (total === 0) return null;
 
     return {
       pre: {
