@@ -260,4 +260,34 @@ const ResultsMulti = () => {
   const metricsQ2 = calculateMetricsForQuestion(2);
 
   return (
-    <div className="min-h
+    <div className="min-h-screen relative bg-secondary">
+      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-40" />
+
+      <div className="relative min-h-screen flex flex-col items-center p-8 bg-secondary animate-fade-in z-30">
+        <SurveyDisplay questions={QUESTIONS} />
+
+        <div className="fixed right-4 top-4 space-y-4">
+          {showAnalysisQ1 && (
+            <MetricsPanel
+              questionNumber={1}
+              metrics={metricsQ1}
+              onHide={() => setShowAnalysisQ1(false)}
+            />
+          )}
+          {showAnalysisQ2 && (
+            <MetricsPanel
+              questionNumber={2}
+              metrics={metricsQ2}
+              onHide={() => setShowAnalysisQ2(false)}
+              showReplayControls={true}
+              isAnimating={isAnimating}
+              onReplay={handleReplay}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ResultsMulti;
