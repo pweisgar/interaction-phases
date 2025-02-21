@@ -144,15 +144,15 @@ const ResultsMulti = () => {
     return {
       pre: {
         time: preTime,
-        percentage: ((preTime / total) * 100).toFixed(1)
+        percentage: ((preTime / total) * 100).toFixed(0)
       },
       during: {
         time: duringTime,
-        percentage: ((duringTime / total) * 100).toFixed(1)
+        percentage: ((duringTime / total) * 100).toFixed(0)
       },
       post: {
         time: postTime,
-        percentage: ((postTime / total) * 100).toFixed(1)
+        percentage: ((postTime / total) * 100).toFixed(0)
       }
     };
   };
